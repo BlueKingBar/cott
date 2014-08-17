@@ -1,0 +1,30 @@
+
+// Dota Abilities Override File
+"DOTAAbilities"
+{
+  "Version"		                    "1"
+  
+  "cott_pot_ability"
+  {
+    "AbilityBehavior" 		        "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+	  "BaseClass" 					        "ability_datadriven"
+	  "AbilityTextureName"          "rubick_empty1"
+    "MaxLevel"                    "1"
+    
+    "Modifiers"
+	  {
+	    "cott_pot_modifier"
+      {
+        "Passive"                 "1"
+        "IsHidden"                "1"    
+
+        "States"
+        {
+          "MODIFIER_STATE_UNSELECTABLE" "MODIFIER_STATE_VALUE_ENABLED"
+          "MODIFIER_STATE_INVULNERABLE" "MODIFIER_STATE_VALUE_ENABLED"
+        }
+      }
+	  }
+  }
+}
+
