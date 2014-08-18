@@ -10,6 +10,7 @@ RESPAWN_TIME = 3.0
 STATS_PER_SOUL = 1
 DMG_PER_SOUL = 2
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
+SOUL_MAX = 999
 SOULS_OVER_TIME_MAX = 30 --Determines cap for over-time soul accumulation.
 SOUL_SCALE_MAX = 120
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
@@ -402,8 +403,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					self:SetNewSouls(hero, max(v.souls - 1, 0))
 
 					--Heal up the hero's hp and mana
-					hero:SetHealth(hero:GetHealth() + hero:GetMaxHealth() * .05 * (oldSouls - v.souls))
-					hero:SetMana(hero:GetMana() + hero:GetMaxMana() * .05 * (oldSouls - v.souls))
+					hero:SetHealth(hero:GetHealth() + 40 * (oldSouls - v.souls))
+					hero:SetMana(hero:GetMana() + 25 * (oldSouls - v.souls))
 
 					--Set team score based on team of hero
 					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
@@ -483,11 +484,11 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-						self:SetNewSouls(hero, playerTable.souls + 2)
+						self:SetNewSouls(hero, playerTable.souls + 4)
 
 						--Heal up the hero's hp and mana
-						hero:SetHealth(hero:GetHealth() + hero:GetMaxHealth() * .50)
-						hero:SetMana(hero:GetMana() + hero:GetMaxMana() * .50)
+						hero:SetHealth(hero:GetHealth() + hero:GetMaxHealth() * .35)
+						hero:SetMana(hero:GetMana() + hero:GetMaxMana() * .35)
 
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
@@ -792,6 +793,8 @@ end
 function ClashGameMode:SetNewSouls(hero, souls)
 	local v = self.vPlayers[hero:GetPlayerID()]
 	local oldSouls = v.souls
+	souls = max(souls, 0)
+	souls = min(souls, SOUL_MAX)
 	v.souls = souls
 
 	-- Scale the model up a percentage of its default size for each soul. Stop scaling beyond a certain number of souls.
@@ -819,6 +822,24 @@ function ClashGameMode:SetNewSouls(hero, souls)
   hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
 
 	hero:CalculateStatBonus()
+
+	local slots = 0
+	if math.floor(souls / 100) > 0 then
+		slots = 3
+	elseif math.floor(souls / 10) > 0 then
+		slots = 2
+	elseif math.floor(souls / 1) > 0 then
+		slots = 1
+	end
+
+	-- Particle showing number of souls
+	if slots > 0 then
+		local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, hero)
+		ParticleManager:SetParticleControl(particle, 1, Vector(0, souls, 0))
+		ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
+		ParticleManager:SetParticleControl(particle, 3, Vector(0, 200, 128))
+		ParticleManager:ReleaseParticleIndex(particle)
+	end
 end
 
 --==================
