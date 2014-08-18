@@ -1,9 +1,9 @@
 cott
 {
 	material materials/overviews/cott.vmat
-	pos_x -8192
-	pos_y 8192
-	scale 16.000
+	pos_x -1520
+	pos_y 3936
+	scale 8.000
 	zoom 1.050
 }
 

@@ -1,11 +1,11 @@
 "AddonInfo"
 {
 	"addonSteamAppID"		"816"
-	"addontitle"		"Barebones"
-	"addonversion"		"0.100000"
-	"addontagline"		"Barebones"
-	"addonauthor"		"BMD"
+	"addontitle"		"Clash of the Titans"
+	"addonversion"		"1.000000"
+	"addontagline"		"Clash of the Titans"
+	"addonauthor"		"Clash of the Titans"
 	"addonContent_Campaign"		"0"
-	"addonURL0"		"https://github.com/bmddota/barebones/"
-	"addonDescription"		"Barebones"
+	"addonURL0"		"https://github.com/BlueKingBar/cott"
+	"addonDescription"		"Clash of the Titans"
 }
