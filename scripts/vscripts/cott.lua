@@ -8,13 +8,12 @@ STARTING_GOLD = 650--650
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
 RESPAWN_TIME = 3.0
 STATS_PER_SOUL = 1
-DMG_PER_SOUL = 2
+DMG_PER_SOUL = 1
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
-SOULS_OVER_TIME_MAX = 30 --Determines cap for over-time soul accumulation.
 SOUL_SCALE_MAX = 120
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
+PICKUP_TIME = 60.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
 XP_PER_LEVEL_TABLE = {}
@@ -400,11 +399,13 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 256)
 				if pot and hero then
 					local oldSouls = v.souls
-					self:SetNewSouls(hero, max(v.souls - 1, 0))
+					local oldHealth = hero:GetHealth()
+					self:SetNewSouls(hero, math.max(v.souls - 1, 0))
 
-					--Heal up the hero's hp and mana
-					hero:SetHealth(hero:GetHealth() + 40 * (oldSouls - v.souls))
-					hero:SetMana(hero:GetMana() + 25 * (oldSouls - v.souls))
+					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
+					if hero:IsAlive() then
+						hero:SetHealth(oldHealth)
+					end
 
 					--Set team score based on team of hero
 					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
@@ -433,7 +434,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 							local hero = v.hero
 
 							--Add a soul periodically.
-							if hero and v.souls < SOULS_OVER_TIME_MAX then
+							if hero then
 								self:SetNewSouls(hero, v.souls + 1)
 							end
 						end
@@ -487,8 +488,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						self:SetNewSouls(hero, playerTable.souls + 4)
 
 						--Heal up the hero's hp and mana
-						hero:SetHealth(hero:GetHealth() + hero:GetMaxHealth() * .35)
-						hero:SetMana(hero:GetMana() + hero:GetMaxMana() * .35)
+						if hero:IsAlive() then
+							hero:SetHealth(hero:GetMaxHealth())
+							hero:SetMana(hero:GetMaxMana())
+						end
 
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
@@ -497,6 +500,20 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			end
 
 			return GameRules:GetGameTime() + 0.1
+		end})
+
+	self:CreateTimer("soul_burn", {
+		endTime = GameRules:GetGameTime() + 1.0,
+		useGameTime = true,
+		callback = function(cott, args)
+			for k, v in pairs(self.vPlayers) do
+				local hero = v.hero
+				if hero and hero:IsAlive() then
+					--Damage the hero based on their souls.
+					hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0004, .024)), 1))
+				end
+			end
+			return GameRules:GetGameTime() + 1.0
 		end})
 
 
@@ -839,6 +856,11 @@ function ClashGameMode:SetNewSouls(hero, souls)
 		ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
 		ParticleManager:SetParticleControl(particle, 3, Vector(0, 200, 128))
 		ParticleManager:ReleaseParticleIndex(particle)
+	end
+
+	--"swell up" if soul count was increased
+	if soulDiff > 0 then
+		hero:AddNewModifier(hero, nil, "modifier_rune_halloween_giant", {duration = 0.5})
 	end
 end
 
