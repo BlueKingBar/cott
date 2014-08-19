@@ -404,7 +404,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
 					if hero:IsAlive() then
-						hero:SetHealth(oldHealth)
+						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)) / 2)
 					end
 
 					--Set team score based on team of hero
@@ -488,10 +488,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						self:SetNewSouls(hero, playerTable.souls + 4)
 
 						--Heal up the hero's hp and mana
-						if hero:IsAlive() then
-							hero:SetHealth(hero:GetMaxHealth())
-							hero:SetMana(hero:GetMaxMana())
-						end
+						hero:AddNewModifier(hero, nil, "modifier_aegis_regen", { duration = 6.0 })
 
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
@@ -510,7 +507,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				local hero = v.hero
 				if hero and hero:IsAlive() then
 					--Damage the hero based on their souls.
-					hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0004, .024)), 1))
+					hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
 				end
 			end
 			return GameRules:GetGameTime() + 1.0
@@ -859,8 +856,8 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	end
 
 	--"swell up" if soul count was increased
-	if soulDiff > 0 then
-		hero:AddNewModifier(hero, nil, "modifier_rune_halloween_giant", {duration = 0.5})
+	if soulDiff > 0 and oldSouls < SOUL_SCALE_MAX then
+		hero:AddNewModifier(hero, nil, "modifier_rune_halloween_giant", {duration = 0.3})
 	end
 end
 
