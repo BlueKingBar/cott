@@ -491,6 +491,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						--Heal up the hero's hp and mana
 						if hero:IsAlive() then
 							playerTable.regen = true
+							hero:SetHealth(hero:GetMaxHealth())
 							hero:SetMana(hero:GetMaxMana())
 						end
 
