@@ -37,7 +37,7 @@
 	"npc_dota_hero_night_stalker" "1"
 	"npc_dota_hero_omniknight" "1"
 	"npc_dota_hero_puck" "1"
-	"npc_dota_hero_pudge" "0"
+	"npc_dota_hero_pudge" "1"
 	"npc_dota_hero_pugna" "1"
 	"npc_dota_hero_rattletrap" "1"
 	"npc_dota_hero_razor" "1"
@@ -109,7 +109,7 @@
 	"npc_dota_hero_abaddon" "1"
 	"npc_dota_hero_earth_spirit" "1"
 	"npc_dota_hero_ember_spirit" "1"
-	"npc_dota_hero_legion_commander" "0"
+	"npc_dota_hero_legion_commander" "1"
 	"npc_dota_hero_phoenix" "1"
 	"npc_dota_hero_terrorblade" "1"
 }
