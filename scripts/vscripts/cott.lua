@@ -12,7 +12,7 @@ DMG_PER_SOUL = 1
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
 SOUL_SCALE_MAX = 120
-SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
+SOUL_TIME = 20.0 --Every player gains a soul at this interval after the game timer hits 0:00
 PICKUP_TIME = 60.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
@@ -485,10 +485,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-						self:SetNewSouls(hero, playerTable.souls + 4)
+						self:SetNewSouls(hero, playerTable.souls + 5)
 
 						--Heal up the hero's hp and mana
-						hero:AddNewModifier(hero, nil, "modifier_aegis_regen", { duration = 6.0 })
+						hero:AddNewModifier(hero, nil, "modifier_aegis_regen", {})
 
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
