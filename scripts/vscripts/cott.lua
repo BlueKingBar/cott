@@ -13,7 +13,7 @@ SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
 SOUL_SCALE_MAX = 120
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-PICKUP_TIME = 60.0 --Heal pickups spawn at this interval after the game timer hits 0:00
+PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
 XP_PER_LEVEL_TABLE = {}
@@ -363,6 +363,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
 					souls = 0,
 					lastAttacker = -1,
+					regen = false,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -485,10 +486,13 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-						self:SetNewSouls(hero, playerTable.souls + 6)
+						self:SetNewSouls(hero, playerTable.souls + 3)
 
 						--Heal up the hero's hp and mana
-						hero:AddNewModifier(hero, nil, "modifier_aegis_regen", {})
+						if hero:IsAlive() then
+							playerTable.regen = true
+							hero:SetMana(hero:GetMaxMana())
+						end
 
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
@@ -499,20 +503,23 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			return GameRules:GetGameTime() + 0.1
 		end})
 
-	self:CreateTimer("soul_burn", {
+	self:CreateTimer("soul_burn_and_regen", {
 		endTime = GameRules:GetGameTime() + 1.0,
 		useGameTime = true,
 		callback = function(cott, args)
 			for k, v in pairs(self.vPlayers) do
 				local hero = v.hero
 				if hero and hero:IsAlive() then
-					--Damage the hero based on their souls.
-					hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
+					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
+					if not v.regen then
+						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
+					else
+						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .10))
+					end
 				end
 			end
 			return GameRules:GetGameTime() + 1.0
 		end})
-
 
 end
 
@@ -759,7 +766,7 @@ function ClashGameMode:OnEntityKilled( keys )
 			local killerTable = self.vPlayers[killerEntity:GetPlayerID()]
 
 			--Steal all the victim's souls.
-			self:SetNewSouls(killerEntity, killerTable.souls + 2 + oldVictimSouls)
+			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
 
 		--This is for if creeps or towers kill a hero. It'll credit the kill to the last person who hit them, assuming someone hit them since their last death.
 		elseif killerEntity and killedTable.lastAttacker >= 0 and keys.entindex_killed ~= keys.entindex_attacker then
@@ -791,6 +798,9 @@ function ClashGameMode:OnEntityHurt( keys )
 	if killedUnit:IsRealHero() then
 		
 		local killedTable = self.vPlayers[killedUnit:GetPlayerID()]
+
+		-- Stop totem regeneration for this hero if they get hurt.
+		killedTable.regen = false
 	
 		-- If the killer entity is owned by a player, switch to that player instead.
 		while killerEntity and killerEntity:GetOwnerEntity() do
