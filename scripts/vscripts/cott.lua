@@ -6,7 +6,7 @@ THINK_TIME = 0.1
 
 STARTING_GOLD = 650--650
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
-RESPAWN_TIME = 3.0
+RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 1
 DMG_PER_SOUL = 1
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
@@ -392,7 +392,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 })
 
 	self:CreateTimer("pot_think", {
-		endTime = GameRules:GetGameTime() + 0.5,
+		endTime = GameRules:GetGameTime() + 0.25,
 		useGameTime = true,
 		callback = function(cott, args)
 			for k, v in pairs(self.vPlayers) do
@@ -419,7 +419,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
 				end
 			end
-			return GameRules:GetGameTime() + 0.5
+			return GameRules:GetGameTime() + 0.25
 		end})
 
 	self:CreateTimer("start_soul_add", {
@@ -456,22 +456,17 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					endTime = GameRules:GetGameTime() + PICKUP_TIME,
 					useGameTime = true,
 					callback = function(cott, args)
-						local keys = {}
-						local i = 1
 						for k, v in pairs(self.pickupSpots) do
-							keys[i] = k
-							i = i + 1
-						end
-						if not self.pickups[1] then
-							v = self.pickupSpots[keys[RandomInt(1, #keys)]]
-							local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
-							pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-							pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-							pickup:SetModelScale(1.5)
-							pickup:SetHullRadius(0)
-							pickup:AddAbility("cott_pot_ability")
-							pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
-							self.pickups[1] = pickup
+							if not self.pickups[k] then
+								local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+								pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+								pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+								pickup:SetModelScale(1.0)
+								pickup:SetHullRadius(0)
+								pickup:AddAbility("cott_pot_ability")
+								pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
+								self.pickups[k] = pickup
+							end
 						end
 						return GameRules:GetGameTime() + PICKUP_TIME
 					end})
@@ -486,7 +481,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			for k, v in pairs(self.pickups) do
 				if self.pickups[k] ~= nil then
-					local hero = Entities:FindByClassnameNearest("npc_dota_hero*", self.pickups[k]:GetCenter(), 180)
+					local hero = Entities:FindByClassnameNearest("npc_dota_hero*", self.pickups[k]:GetCenter(), 160)
 
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
@@ -775,12 +770,12 @@ function ClashGameMode:OnEntityKilled( keys )
 			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
 
 		--This is for if creeps or towers kill a hero. It'll credit the kill to the last person who hit them, assuming someone hit them since their last death.
-		elseif killerEntity and killedTable.lastAttacker >= 0 then
+		elseif killerEntity and killedTable.lastAttacker >= 0 and keys.entindex_killed ~= keys.entindex_attacker then
 			local killerTable = self.vPlayers[killedTable.lastAttacker]
 
 			killerEntity = self.vPlayers[killedTable.lastAttacker].hero
 
-			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
+			self:SetNewSouls(killerEntity, killerTable.souls + 2 + oldVictimSouls)
 		end
 
 		killedTable.lastAttacker = -1
@@ -814,7 +809,7 @@ function ClashGameMode:OnEntityHurt( keys )
 		end
 
 		--If we found a player, set the lastAttacker index to that player's ID
-		if killerEntity:IsPlayer() and keys.entindex_killed ~= keys.entindex_attacker then
+		if killerEntity:IsPlayer() then
 			killedTable.lastAttacker = killerEntity:GetPlayerID()
 		end
 	end
@@ -871,10 +866,10 @@ function ClashGameMode:SetNewSouls(hero, souls)
 		ParticleManager:ReleaseParticleIndex(particle)
 	end
 
-	--[["swell up" if soul count was increased
+	--"swell up" if soul count was increased
 	if soulDiff > 0 and oldSouls < SOUL_SCALE_MAX then
 		hero:AddNewModifier(hero, nil, "modifier_rune_halloween_giant", {duration = 0.3})
-	end]]
+	end
 end
 
 --==================
