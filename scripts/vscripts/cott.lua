@@ -6,7 +6,7 @@ THINK_TIME = 0.1
 
 STARTING_GOLD = 650--650
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
-RESPAWN_TIME = 3.0
+RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 1
 DMG_PER_SOUL = 1
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
@@ -392,7 +392,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 })
 
 	self:CreateTimer("pot_think", {
-		endTime = GameRules:GetGameTime() + 0.5,
+		endTime = GameRules:GetGameTime() + 0.25,
 		useGameTime = true,
 		callback = function(cott, args)
 			for k, v in pairs(self.vPlayers) do
@@ -405,7 +405,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
 					if hero:IsAlive() then
-						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)) / 2)
+						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0003, .030)) / 2)
 					end
 
 					--Set team score based on team of hero
@@ -419,7 +419,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
 				end
 			end
-			return GameRules:GetGameTime() + 0.5
+
+			return GameRules:GetGameTime() + 0.25
 		end})
 
 	self:CreateTimer("start_soul_add", {
@@ -491,7 +492,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-						self:SetNewSouls(hero, playerTable.souls + 3)
+						self:SetNewSouls(hero, playerTable.souls + 5)
 
 						--Heal up the hero's hp and mana
 						if hero:IsAlive() then
@@ -518,7 +519,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if hero and hero:IsAlive() then
 					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
 					if not v.regen then
-						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
+						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0003, .030)), 1))
 					else
 						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .10))
 					end
@@ -742,7 +743,7 @@ function ClashGameMode:OnEntityKilled( keys )
 
 	-- If the unit is a hero, reduce their soul count.
 	if killedUnit:IsRealHero() then
-		--Respawn in 3 game seconds.
+		--Respawn in 6 game seconds.
 		self:CreateTimer('respawn_player_'..killedUnit:GetPlayerID(), {
 			endTime = GameRules:GetGameTime() + RESPAWN_TIME,
 			useGameTime = true,
