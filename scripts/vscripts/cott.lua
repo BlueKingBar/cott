@@ -176,8 +176,8 @@ function ClashGameMode:InitGameMode()
 		pspot:SetModel("models/heroes/pedestal/pedestal_1_small.vmdl")
 		pspot:SetModelScale(1.0)
 		pspot:SetHullRadius(0)
-		pspot:AddAbility("cott_pot_ability")
-		pspot:FindAbilityByName('cott_pot_ability'):SetLevel(1)
+		pspot:AddAbility("cott_spot_ability")
+		pspot:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		self.pickupSpots[k] = pspot
 	end
 
@@ -444,17 +444,22 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					endTime = GameRules:GetGameTime() + PICKUP_TIME,
 					useGameTime = true,
 					callback = function(cott, args)
+						local keys = {}
+						local i = 1
 						for k, v in pairs(self.pickupSpots) do
-							if not self.pickups[k] then
-								local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
-								pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-								pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-								pickup:SetModelScale(1.0)
-								pickup:SetHullRadius(0)
-								pickup:AddAbility("cott_pot_ability")
-								pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
-								self.pickups[k] = pickup
-							end
+							keys[i] = k
+							i = i + 1
+						end
+						if not self.pickups[1] then
+							v = self.pickupSpots[keys[RandomInt(1, #keys)]]
+							local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+							pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+							pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+							pickup:SetModelScale(1.5)
+							pickup:SetHullRadius(0)
+							pickup:AddAbility("cott_pot_ability")
+							pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
+							self.pickups[1] = pickup
 						end
 						return GameRules:GetGameTime() + PICKUP_TIME
 					end})
