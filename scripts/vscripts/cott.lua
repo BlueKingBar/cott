@@ -224,8 +224,6 @@ function ClashGameMode:SetupMultiTeams()
 end
 
 function ClashGameMode:AbilityUsed(keys)
-	print('[COTT] AbilityUsed')
-	PrintTable(keys)
 end
 
 -- Cleanup a player when they leave
@@ -255,37 +253,10 @@ local attach = 0
 local controlPoints = {}
 local particleEffect = ""
 
-function ClashGameMode:PlayerSay(keys)
-	print ('[COTT] PlayerSay')
-	PrintTable(keys)
-	
-	-- Get the player entity for the user speaking
-	local ply = self.vUserIds[keys.userid]
-	if ply == nil then
-		return
-	end
-	
-	-- Get the player ID for the user speaking
-	local plyID = ply:GetPlayerID()
-	if not PlayerResource:IsValidPlayer(plyID) then
-		return
-	end
-	
-	-- Should have a valid, in-game player saying something at this point
-	-- The text the person said
-	local text = keys.text
-	
-	-- Match the text against something
-	local matchA, matchB = string.match(text, "^-swap%s+(%d)%s+(%d)")
-	if matchA ~= nil and matchB ~= nil then
-		-- Act on the match
-	end
-	
+function ClashGameMode:PlayerSay(keys)	
 end
 
 function ClashGameMode:AutoAssignPlayer(keys)
-	print ('[COTT] AutoAssignPlayer')
-	PrintTable(keys)
 	ClashGameMode:CaptureGameMode()
 	
 	local entIndex = keys.index+1
@@ -334,12 +305,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 	end]]
 
 	--Autoassign player
-	print("CREATING TIMER")
 	self:CreateTimer('assign_player_'..entIndex, {
 	endTime = Time(),
 	callback = function(cott, args)
 		-- Make sure the game has started
-		print ('ASSIGNED')
 		playerID = ply:GetPlayerID()
 		if GameRules:State_Get() >= DOTA_GAMERULES_STATE_PRE_GAME and playerID ~= -1 then
 			-- Assign a hero to a fake client
@@ -361,8 +330,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					bRoundInit = false,
 					name = self.vUserNames[keys.userid],
 					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
-					currentScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0,
-					targetScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0,
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
@@ -560,9 +527,6 @@ function ClashGameMode:LoopOverPlayers(callback)
 end
 
 function ClashGameMode:ShopReplacement( keys )
-	print ( '[COTT] ShopReplacement' )
-	PrintTable(keys)
-
 	-- The playerID of the hero who is buying something
 	local plyID = keys.PlayerID
 	if not plyID then return end
@@ -746,9 +710,6 @@ function ClashGameMode:ExampleConsoleCommand()
 end
 
 function ClashGameMode:OnEntityKilled( keys )
-	print( '[COTT] OnEntityKilled Called' )
-	PrintTable( keys )
-	
 	-- The Unit that was Killed
 	local killedUnit = EntIndexToHScript( keys.entindex_killed )
 	-- The Killing entity
@@ -805,10 +766,7 @@ function ClashGameMode:OnEntityKilled( keys )
 	end
 end
 
-function ClashGameMode:OnEntityHurt( keys )
-	print( '[COTT] OnEntityHurt Called' )
-	PrintTable( keys )
-	
+function ClashGameMode:OnEntityHurt( keys )	
 	-- The Unit that was hurt
 	local killedUnit = EntIndexToHScript( keys.entindex_killed )
 	-- The entity that hurt it
@@ -846,44 +804,9 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	v.souls = souls
 
 	-- Scale the model up a percentage of its default size for each soul. Stop scaling beyond a certain number of souls.
-	v.targetScale = v.defaultScale + math.min(v.defaultScale * SCALE_PER_SOUL * v.souls, v.defaultScale * SCALE_PER_SOUL * SOUL_SCALE_MAX)
+	hero:SetModelScale(v.defaultScale + math.min(v.defaultScale * SCALE_PER_SOUL * v.souls, v.defaultScale * SCALE_PER_SOUL * SOUL_SCALE_MAX))
 
 	local soulDiff = souls - oldSouls
-
-	if soulDiff > 0 then
-		self:CreateTimer('grow_'..hero:GetPlayerID(), {
-				endTime = GameRules:GetGameTime(),
-				useGameTime = true,
-				callback = function(cott, args)
-					-- fluctuate does just that: fluctuates from negative to positive.
-					-- This makes a sort of cartoonish/Mario-style grow effect.
-					local fluctuate = ((math.floor(GameRules:GetGameTime() * 10) % 2) * 2 - 1)/5
-					if v.currentScale <= v.targetScale or fluctuate > 0 then
-						v.currentScale = v.currentScale + v.defaultScale * (0.1 + fluctuate)
-						hero:SetModelScale(v.currentScale)
-						return GameRules:GetGameTime() + 0.1
-					elseif v.currentScale > v.targetScale then
-						v.currentScale = v.targetScale
-						hero:SetModelScale(v.currentScale)
-						return
-					end
-				end})
-	elseif soulDiff < 0 then
-		self:CreateTimer('shrink_'..hero:GetPlayerID(), {
-				endTime = GameRules:GetGameTime(),
-				useGameTime = true,
-				callback = function(cott, args)
-					if v.currentScale > v.targetScale then
-						v.currentScale = v.currentScale - v.defaultScale * 0.2
-						hero:SetModelScale(v.currentScale)
-						return GameRules:GetGameTime() + 0.1
-					elseif v.currentScale <= v.targetScale then
-						v.currentScale = v.targetScale
-						hero:SetModelScale(v.currentScale)
-						return
-					end
-				end})
-	end
 
 	-- Set attribute change based on the number of souls change.
 	hero:SetBaseStrength(hero:GetBaseStrength() + soulDiff * STATS_PER_SOUL)
