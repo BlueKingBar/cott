@@ -6,6 +6,7 @@ THINK_TIME = 0.1
 
 STARTING_GOLD = 650--650
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
+POINTS_TO_WIN = 400
 RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 1
 DMG_PER_SOUL = 1
@@ -321,6 +322,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				end
 			end
 			heroEntity = ply:GetAssignedHero()
+
+			ShowGenericPopupToPlayer(ply, "#rules_title", "#rules_text", "", "", 0)
+
 			-- Check if we have a reference for this player's hero
 			if heroEntity ~= nil and IsValidEntity(heroEntity) then
 				-- Set up a heroTable containing the state for each player to be tracked
@@ -395,6 +399,13 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						ParticleManager:ReleaseParticleIndex(particle)
 					end
 				end
+
+				if self.nRadiantScore >= POINTS_TO_WIN then
+					GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
+				elseif self.nDireScore >= POINTS_TO_WIN then
+					GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
+				end
+
 			end
 			return GameRules:GetGameTime() + 0.25
 		end})
