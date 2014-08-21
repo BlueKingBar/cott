@@ -361,6 +361,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					bRoundInit = false,
 					name = self.vUserNames[keys.userid],
 					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
+					currentScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0,
+					targetScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0,
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
@@ -397,7 +399,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			for k, v in pairs(self.vPlayers) do
 				local hero = v.hero
-				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 256)
+				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 320)
 				if pot and hero then
 					local oldSouls = v.souls
 					local oldHealth = hero:GetHealth()
@@ -417,6 +419,14 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantScore)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
+
+					--Make a particle for the soul siphon effect.
+					if oldSouls ~= v.souls then
+						local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_slark/slark_essence_shift_hit_spill_streak.vpcf", PATTACH_RENDERORIGIN_FOLLOW, hero)
+						ParticleManager:SetParticleControl(particle, 1, pot:GetCenter())
+						ParticleManager:SetParticleControl(particle, 2, hero:GetCenter())
+						ParticleManager:ReleaseParticleIndex(particle)
+					end
 				end
 			end
 			return GameRules:GetGameTime() + 0.25
@@ -522,6 +532,19 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			return GameRules:GetGameTime() + 1.0
 		end})
 
+	self:CreateTimer("pot_particles", {
+		endTime = Time(),
+		useGameTime = false,
+		callback = function(cott, args)
+			for k, v in pairs(self.soulPots) do
+				local pot = v
+				if pot then
+					local particle = ParticleManager:CreateParticle("particles/world_environmental_fx/bluelamp_flame_torch.vpcf", PATTACH_RENDERORIGIN_FOLLOW, pot)
+					ParticleManager:SetParticleControl(particle, 0, Vector(0,0,0))
+					ParticleManager:ReleaseParticleIndex(particle)
+				end
+			end
+		end})
 end
 
 function ClashGameMode:LoopOverPlayers(callback)
@@ -823,9 +846,46 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	v.souls = souls
 
 	-- Scale the model up a percentage of its default size for each soul. Stop scaling beyond a certain number of souls.
-	hero:SetModelScale(v.defaultScale + math.min(v.defaultScale * SCALE_PER_SOUL * v.souls, v.defaultScale * SCALE_PER_SOUL * SOUL_SCALE_MAX))
-	-- Set attribute change based on the number of souls change.
+	v.targetScale = v.defaultScale + math.min(v.defaultScale * SCALE_PER_SOUL * v.souls, v.defaultScale * SCALE_PER_SOUL * SOUL_SCALE_MAX)
+
 	local soulDiff = souls - oldSouls
+
+	if soulDiff > 0 then
+		self:CreateTimer('grow_'..hero:GetPlayerID(), {
+				endTime = GameRules:GetGameTime(),
+				useGameTime = true,
+				callback = function(cott, args)
+					-- fluctuate does just that: fluctuates from negative to positive.
+					-- This makes a sort of cartoonish/Mario-style grow effect.
+					local fluctuate = ((math.floor(GameRules:GetGameTime() * 10) % 2) * 2 - 1)/5
+					if v.currentScale <= v.targetScale or fluctuate > 0 then
+						v.currentScale = v.currentScale + v.defaultScale * (0.1 + fluctuate)
+						hero:SetModelScale(v.currentScale)
+						return GameRules:GetGameTime() + 0.1
+					elseif v.currentScale > v.targetScale then
+						v.currentScale = v.targetScale
+						hero:SetModelScale(v.currentScale)
+						return
+					end
+				end})
+	elseif soulDiff < 0 then
+		self:CreateTimer('shrink_'..hero:GetPlayerID(), {
+				endTime = GameRules:GetGameTime(),
+				useGameTime = true,
+				callback = function(cott, args)
+					if v.currentScale > v.targetScale then
+						v.currentScale = v.currentScale - v.defaultScale * 0.2
+						hero:SetModelScale(v.currentScale)
+						return GameRules:GetGameTime() + 0.1
+					elseif v.currentScale <= v.targetScale then
+						v.currentScale = v.targetScale
+						hero:SetModelScale(v.currentScale)
+						return
+					end
+				end})
+	end
+
+	-- Set attribute change based on the number of souls change.
 	hero:SetBaseStrength(hero:GetBaseStrength() + soulDiff * STATS_PER_SOUL)
 	hero:SetBaseAgility(hero:GetBaseAgility() + soulDiff * STATS_PER_SOUL)
 	hero:SetBaseIntellect(hero:GetBaseIntellect() + soulDiff * STATS_PER_SOUL)
@@ -866,10 +926,10 @@ function ClashGameMode:SetNewSouls(hero, souls)
 		ParticleManager:ReleaseParticleIndex(particle)
 	end
 
-	--"swell up" if soul count was increased
+	--[["swell up" if soul count was increased
 	if soulDiff > 0 and oldSouls < SOUL_SCALE_MAX then
 		hero:AddNewModifier(hero, nil, "modifier_rune_halloween_giant", {duration = 0.3})
-	end
+	end]]
 end
 
 --==================
