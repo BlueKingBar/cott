@@ -407,7 +407,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
 					if hero:IsAlive() then
-						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0003, .030)) / 2)
+						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)) / 2)
 					end
 
 					--Set team score based on team of hero
@@ -496,7 +496,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero and hero:IsRealHero() then
 						local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-						self:SetNewSouls(hero, playerTable.souls + 5)
+						self:SetNewSouls(hero, playerTable.souls + 3)
 
 						--Heal up the hero's hp and mana
 						if hero:IsAlive() then
@@ -523,7 +523,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if hero and hero:IsAlive() then
 					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
 					if not v.regen then
-						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0003, .030)), 1))
+						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
 					else
 						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .10))
 					end
