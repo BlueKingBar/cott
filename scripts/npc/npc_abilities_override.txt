@@ -35,7 +35,7 @@
 	//"item_staff_of_wizardry"			"REMOVE"
 	//"item_ultimate_orb"			"REMOVE"
 	//"item_gloves"			"REMOVE"
-	//"item_lifesteal"			"REMOVE"
+	"item_lifesteal"			"REMOVE"
 	//"item_ring_of_regen"			"REMOVE"
 	//"item_sobi_mask"			"REMOVE"
 	//"item_boots"			"REMOVE"
