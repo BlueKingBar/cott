@@ -95,11 +95,38 @@
   {
     // General
     //-------------------------------------------------------------------------------------------------------------
-    "AbilityType"         "DOTA_ABILITY_TYPE_ULTIMATE"
-    "AbilityBehavior"       "DOTA_ABILITY_BEHAVIOR_PASSIVE"
     "BaseClass"           "ability_datadriven"
+    //"AbilityTextureName"      "crystal_maiden_brilliance_aura"
+    "AbilityBehavior"       "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "AbilityUnitTargetTeam"     "DOTA_UNIT_TARGET_TEAM_ENEMY"
+    "AbilityUnitTargetType"     "DOTA_UNIT_TARGET_HERO"
+    "AbilityType"         "DOTA_ABILITY_TYPE_ULTIMATE"
+    "AbilityUnitTargetFlags"    "DOTA_UNIT_TARGET_FLAG_MAGIC_IMMUNE_ENEMIES"
+    "AbilityCastAnimation"      "ACT_DOTA_CAST_ABILITY_3"
     "AbilityTextureName"          "legion_commander_duel"
     "MaxLevel"                    "3"
+    "AbilityCastRange"        "150"
+    "AbilityCastPoint"        "0.3"
+
+    // Time   
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityCooldown"       "50.0"
+
+    // Cost
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityManaCost"       "75"
+    
+    // Ability Actions
+    //-------------------------------------------------------------------------------------------------------------
+    "OnSpellStart"
+    {
+      "ApplyModifier"
+      {
+        "Target"        "TARGET"
+        "Duration"        "%duration"
+        "ModifierName"      "legion_commander_duelist_stun"
+      }
+    }
 
 
 
@@ -129,6 +156,17 @@
           "MODIFIER_PROPERTY_PREATTACK_BONUS_DAMAGE" "%dmg_increase"
         }
       }
+      "legion_commander_duelist_stun"
+      {
+        "Duration"              "%duration"
+        "EffectName"            "generic_stunned"
+        "EffectAttachType"      "follow_overhead"
+        "OverrideAnimation"     "ACT_DOTA_DISABLED"
+        "States"
+        {
+          "MODIFIER_STATE_STUNNED" "MODIFIER_STATE_VALUE_ENABLED"
+        }      
+      }
     }
 
     // Special
@@ -139,6 +177,11 @@
       {
         "var_type"        "FIELD_INTEGER"
         "dmg_increase"    "5 7 9"
+      }
+      "02"
+      {
+        "var_type"        "FIELD_FLOAT"
+        "duration"        "3.0 3.5 4.0"
       }
     }
   }
