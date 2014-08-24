@@ -345,8 +345,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			end
 			heroEntity = ply:GetAssignedHero()
 
-			ShowGenericPopupToPlayer(ply, "#rules_title", "#rules_text", "", "", 0)
-
 			-- Check if we have a reference for this player's hero
 			if heroEntity ~= nil and IsValidEntity(heroEntity) then
 				-- Set up a heroTable containing the state for each player to be tracked
@@ -361,6 +359,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					regen = false,
 				}
 				self.vPlayers[playerID] = heroTable
+
+				--Show rules popup.
+				ShowGenericPopupToPlayer(ply, "#rules_title", "#rules_text", "", "", 0)
 
 				--[[ Set up multiteam
 				local team = "team1"
@@ -400,7 +401,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
 					if hero:IsAlive() then
-						hero:SetHealth(oldHealth + math.ceil(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)) / 2)
+						hero:SetHealth(oldHealth)
 					end
 
 					--Set team score based on team of hero
@@ -534,7 +535,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if hero and hero:IsAlive() then
 					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
 					if not v.regen then
-						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .030)), 1))
+						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .036)), 1))
 					else
 						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .10))
 					end
