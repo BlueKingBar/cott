@@ -181,6 +181,28 @@ function ClashGameMode:InitGameMode()
 		self.pickupSpots[k] = pspot
 	end
 
+	--Data for base healers
+	self.basePointsRadiant = Entities:FindAllByName("healer_radiant")
+	self.basesRadiant = {}
+	self.basePointsDire = Entities:FindAllByName("healer_dire")
+	self.basesDire = {}
+
+	for k, v in pairs(self.basePointsRadiant) do
+		local base = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		base:SetHullRadius(0)
+		base:AddAbility("cott_spot_ability")
+		base:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		self.basesRadiant[k] = base 
+	end
+
+	for k, v in pairs(self.basePointsDire) do
+		local base = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
+		base:SetHullRadius(0)
+		base:AddAbility("cott_spot_ability")
+		base:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		self.basesDire[k] = base 
+	end
+
 	print('[COTT] values set')
 
 	print('[COTT] Done precaching!') 
@@ -474,20 +496,26 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			for k, v in pairs(self.pickups) do
 				if self.pickups[k] ~= nil then
-					local hero = Entities:FindByClassnameNearest("npc_dota_hero*", self.pickups[k]:GetCenter(), 160)
+					local hero = Entities:FindByClassnameWithin(nil, "npc_dota_hero*", self.pickups[k]:GetCenter(), 200)
+					local heroFound = false
+					while hero do
+						if hero:IsRealHero() then
+							local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-					if hero and hero:IsRealHero() then
-						local playerTable = self.vPlayers[hero:GetPlayerID()]
+							self:SetNewSouls(hero, playerTable.souls + 3)
 
-						self:SetNewSouls(hero, playerTable.souls + 3)
-
-						--Heal up the hero's hp and mana
-						if hero:IsAlive() then
-							playerTable.regen = true
-							hero:SetHealth(hero:GetMaxHealth())
-							hero:SetMana(hero:GetMaxMana())
+							--Heal up the hero's hp and mana
+							if hero:IsAlive() then
+								playerTable.regen = true
+								hero:SetHealth(hero:GetMaxHealth())
+								hero:SetMana(hero:GetMaxMana())
+								heroFound = true
+							end
 						end
-
+						
+						hero = Entities:FindByClassnameWithin(hero, "npc_dota_hero*", self.pickups[k]:GetCenter(), 200)
+					end
+					if heroFound then
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
 					end
@@ -528,6 +556,53 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				end
 			end
 		end})
+
+	self:CreateTimer("healer_think", {
+		endTime = GameRules:GetGameTime(),
+		useGameTime = true,
+		callback = function(cott, args)
+			for k, v in pairs(self.vPlayers) do
+				local hero = v.hero
+				local healer = nil
+				if hero and hero:IsRealHero() then
+					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
+						healer = Entities:FindByNameNearest("healer_radiant", hero:GetCenter(), 350)
+					end
+					if hero:GetTeam() == DOTA_TEAM_BADGUYS then
+						healer = Entities:FindByNameNearest("healer_dire", hero:GetCenter(), 350)
+					end
+					if healer then
+						--Heal the hero and restore their mana.
+						if hero:IsAlive() then
+							hero:SetHealth(hero:GetHealth() + 25)
+							hero:SetMana(hero:GetMaxMana())
+						end
+					end
+				end
+			end
+			return GameRules:GetGameTime() + 1.0
+		end})
+
+	self:CreateTimer("healer_particles", {
+		endTime = Time(),
+		useGameTime = false,
+		callback = function(cott, args)
+			for k, v in pairs(self.basesRadiant) do
+				local healer = v
+				if healer then
+					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_witchdoctor/witchdoctor_voodoo_restoration_heal_radiant.vpcf", PATTACH_OVERHEAD_FOLLOW, healer)
+					ParticleManager:ReleaseParticleIndex(particle)
+				end
+			end
+			for k, v in pairs(self.basesDire) do
+				local healer = v
+				if healer then
+					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_witchdoctor/witchdoctor_voodoo_restoration_heal.vpcf", PATTACH_OVERHEAD_FOLLOW, healer)
+					ParticleManager:ReleaseParticleIndex(particle)
+				end
+			end
+		end})
+
 end
 
 function ClashGameMode:LoopOverPlayers(callback)
