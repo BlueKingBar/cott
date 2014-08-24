@@ -1,0 +1,11 @@
+"AddonInfo"
+{
+	"addonSteamAppID"		"816"
+	"addontitle"		"Clash of the Titans"
+	"addonversion"		"1.000000"
+	"addontagline"		"Clash of the Titans"
+	"addonauthor"		"Clash of the Titans"
+	"addonContent_Campaign"		"0"
+	"addonURL0"		"https://github.com/BlueKingBar/cott"
+	"addonDescription"		"Clash of the Titans"
+}

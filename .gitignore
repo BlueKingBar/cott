@@ -1,36 +1,40 @@
-# Windows image file caches
-Thumbs.db
-ehthumbs.db
+manifest/
 
-# Folder config file
-Desktop.ini
+content/core/
+content/dota_core/
+content/dota_addons/*
+content/_toolsautosave/
 
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
+game/_toolsettings/
+game/bin/
+game/core/
+game/dota/
+game/dota_core/
+game/dota_addons/*
+game/dota_imported/
+game/dota_koreana/
+game/dota_koreana_imported/
+game/dota_lv/
+game/dota_lv_imported/
+game/dota_schinese/
+game/dota_schinese_imported/
+game/570_install.vdf
+game/thirdpartylegalnotices.txt
 
-# Windows Installer files
-*.cab
-*.msi
-*.msm
-*.msp
+*~
+*.swp
+*.bin
 
-# =========================
-# Operating System Files
-# =========================
+######################
+# PROJECT EXCEPTIONS #
+######################
+!content/dota_addons/cott/
+!content/dota_addons/cott/*
+!game/dota_addons/cott/
+!game/dota_addons/cott/*
 
-# OSX
-# =========================
-
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Icon must ends with two \r.
-Icon
-
-# Thumbnails
-._*
-
-# Files that might appear on external disk
-.Spotlight-V100
-.Trashes
+############################
+# PROJECT SPECIFIC IGNORES #
+############################
+game/dota_addons/cott/tools_asset_info.bin
+game/dota_addons/cott/tools_thumbnail_cache.bin

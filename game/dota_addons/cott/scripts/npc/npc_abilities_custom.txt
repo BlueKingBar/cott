@@ -1,0 +1,222 @@
+
+// Dota Abilities Override File
+"DOTAAbilities"
+{
+  "Version"		                    "1"
+  
+  "cott_pot_ability"
+  {
+    "AbilityBehavior" 		        "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+	  "BaseClass" 					        "ability_datadriven"
+	  "AbilityTextureName"          "rubick_empty1"
+    "MaxLevel"                    "1"
+    
+    "Modifiers"
+	  {
+	    "cott_pot_modifier"
+      {
+        "Passive"                 "1"
+        "IsHidden"                "1"    
+
+        "States"
+        {
+          "MODIFIER_STATE_UNSELECTABLE" "MODIFIER_STATE_VALUE_ENABLED"
+          "MODIFIER_STATE_INVULNERABLE" "MODIFIER_STATE_VALUE_ENABLED"
+        }
+      }
+	  }
+  }
+
+  "cott_spot_ability"
+  {
+    "AbilityBehavior"             "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    "BaseClass"                   "ability_datadriven"
+    "AbilityTextureName"          "rubick_empty1"
+    "MaxLevel"                    "1"
+    
+    "Modifiers"
+    {
+      "cott_spot_modifier"
+      {
+        "Passive"                 "1"
+        "IsHidden"                "1"    
+
+        "States"
+        {
+          "MODIFIER_STATE_UNSELECTABLE"   "MODIFIER_STATE_VALUE_ENABLED"
+          "MODIFIER_STATE_INVULNERABLE"   "MODIFIER_STATE_VALUE_ENABLED"
+          "MODIFIER_STATE_NOT_ON_MINIMAP" "MODIFIER_STATE_VALUE_ENABLED"
+        }
+      }
+    }
+  }
+
+  "cott_flesh_armor"
+  {
+    // General
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityBehavior"       "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    "BaseClass"           "ability_datadriven"
+    "AbilityTextureName"          "pudge_flesh_heap"
+    "MaxLevel"                    "4"
+
+    "Modifiers"
+    {
+      "pudge_flesh_armor"
+      {
+        "Passive"  "1"
+
+        "Properties"
+        {
+          "MODIFIER_PROPERTY_MAGICAL_RESISTANCE_BONUS" "%magic_resist"
+          "MODIFIER_PROPERTY_STATS_STRENGTH_BONUS" "%bonus_strength"
+        }
+      }
+    }
+
+    // Special
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilitySpecial"
+    {
+      "01"
+      {
+        "var_type"        "FIELD_INTEGER"
+        "magic_resist"    "6 8 10 12"
+      }
+      "02"
+      {
+        "var_type"        "FIELD_INTEGER"
+        "bonus_strength"  "6 9 12 15"
+      }
+    }
+  }
+
+  "cott_duelist"
+  {
+    // General
+    //-------------------------------------------------------------------------------------------------------------
+    "BaseClass"           "ability_datadriven"
+    //"AbilityTextureName"      "crystal_maiden_brilliance_aura"
+    "AbilityBehavior"       "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "AbilityUnitTargetTeam"     "DOTA_UNIT_TARGET_TEAM_ENEMY"
+    "AbilityUnitTargetType"     "DOTA_UNIT_TARGET_HERO"
+    "AbilityType"         "DOTA_ABILITY_TYPE_ULTIMATE"
+    "AbilityUnitTargetFlags"    "DOTA_UNIT_TARGET_FLAG_MAGIC_IMMUNE_ENEMIES"
+    "AbilityCastAnimation"      "ACT_DOTA_CAST_ABILITY_3"
+    "AbilityTextureName"          "legion_commander_duel"
+    "MaxLevel"                    "3"
+    "AbilityCastRange"        "150"
+    "AbilityCastPoint"        "0.3"
+
+    // Time   
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityCooldown"       "50.0"
+
+    // Cost
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityManaCost"       "75"
+    
+    // Ability Actions
+    //-------------------------------------------------------------------------------------------------------------
+    "OnSpellStart"
+    {
+      "ApplyModifier"
+      {
+        "Target"        "TARGET"
+        "Duration"        "%duration"
+        "ModifierName"      "legion_commander_duelist_stun"
+      }
+    }
+
+
+
+    "Modifiers"
+    {
+      "legion_commander_duelist"
+      {
+        "Passive" "1"
+
+        "OnAttackLanded"
+        {
+          "ApplyModifier"
+          {
+            "Target" "CASTER"
+            "ModifierName" "legion_commander_duelist_stack"
+          }
+        }
+      }
+      "legion_commander_duelist_stack"
+      {
+        "IsHidden"            "1"
+        "Duration"          "3.0"
+        "Attributes"        "MODIFIER_ATTRIBUTE_MULTIPLE"
+
+        "Properties"
+        {
+          "MODIFIER_PROPERTY_PREATTACK_BONUS_DAMAGE" "%dmg_increase"
+        }
+      }
+      "legion_commander_duelist_stun"
+      {
+        "Duration"              "%duration"
+        "EffectName"            "generic_stunned"
+        "EffectAttachType"      "follow_overhead"
+        "OverrideAnimation"     "ACT_DOTA_DISABLED"
+        "States"
+        {
+          "MODIFIER_STATE_STUNNED" "MODIFIER_STATE_VALUE_ENABLED"
+        }      
+      }
+    }
+
+    // Special
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilitySpecial"
+    {
+      "01"
+      {
+        "var_type"        "FIELD_INTEGER"
+        "dmg_increase"    "5 7 9"
+      }
+      "02"
+      {
+        "var_type"        "FIELD_FLOAT"
+        "duration"        "3.0 3.5 4.0"
+      }
+    }
+  }
+
+  "cott_moment_of_courage"
+  {
+    // General
+    //-------------------------------------------------------------------------------------------------------------
+    "BaseClass"             "legion_commander_moment_of_courage"
+    "AbilityBehavior"       "DOTA_ABILITY_BEHAVIOR_PASSIVE"
+    
+    // Time   
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilityCooldown"       "0.9"
+
+    // Special
+    //-------------------------------------------------------------------------------------------------------------
+    "AbilitySpecial"
+    {
+      "01"
+      {
+        "var_type"          "FIELD_INTEGER"
+        "trigger_chance"      "16 18 20 22"
+      }
+      "02"
+      {
+        "var_type"          "FIELD_FLOAT"
+        "buff_duration"       "1.0"
+      }
+      "03"
+      {
+        "var_type"          "FIELD_INTEGER"
+        "hp_leech_percent"      "0 0 0 0"
+      }
+    }
+  }
+}
+
