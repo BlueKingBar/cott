@@ -58,7 +58,7 @@ function ClashGameMode:InitGameMode()
 	GameRules:SetHeroSelectionTime( 60.0 )
 	GameRules:SetPreGameTime( 30.0)
 	GameRules:SetPostGameTime( 60.0 )
-	GameRules:SetTreeRegrowTime( 60.0 )
+	GameRules:SetTreeRegrowTime( 180.0 )
 	GameRules:SetUseCustomHeroXPValues ( false )
 	GameRules:SetGoldPerTick(1)
 	print('[COTT] Rules set')
@@ -508,8 +508,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 							--Heal up the hero's hp and mana
 							if hero:IsAlive() then
 								playerTable.regen = true
-								hero:SetHealth(hero:GetMaxHealth())
-								hero:SetMana(hero:GetMaxMana())
 								heroFound = true
 							end
 						end
@@ -537,7 +535,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if not v.regen then
 						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .036)), 1))
 					else
-						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .10))
+						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .0666))
+						hero:SetMana(hero:GetMana() + math.ceil(hero:GetMaxMana() * .0666))
 					end
 				end
 			end
@@ -576,7 +575,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						--Heal the hero and restore their mana.
 						if hero:IsAlive() then
 							hero:SetHealth(hero:GetHealth() + 25)
-							hero:SetMana(hero:GetMaxMana())
+							hero:SetMana(hero:GetMana() + math.ceil(hero:GetMaxMana() * .0666))
 						end
 					end
 				end
