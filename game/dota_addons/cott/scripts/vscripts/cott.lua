@@ -77,6 +77,7 @@ function ClashGameMode:InitGameMode()
 	ListenToGameEvent('dota_player_used_ability', Dynamic_Wrap(ClashGameMode, 'AbilityUsed'), self)
 
 	Convars:RegisterCommand( "command_example", Dynamic_Wrap(ClashGameMode, 'ExampleConsoleCommand'), "A console command example", 0 )
+	Convars:RegisterCommand( "set_souls", Dynamic_Wrap(ClashGameMode, 'CheatSetSouls'), "Sets the number of souls you have.", FCVAR_CHEAT )
 	
 	-- Fill server with fake clients
 	Convars:RegisterCommand('fake', function()
@@ -217,7 +218,7 @@ function ClashGameMode:CaptureGameMode()
 		-- Disables recommended items...though I don't think it works
 		GameMode:SetRecommendedItemsDisabled( true )
 		-- Override the normal camera distance.  Usual is 1134
-		GameMode:SetCameraDistanceOverride( 1504.0 )
+		GameMode:SetCameraDistanceOverride( 1400.0 )
 		-- Set Buyback options
 		GameMode:SetCustomBuybackCostEnabled( true )
 		GameMode:SetCustomBuybackCooldownEnabled( true )
@@ -795,6 +796,16 @@ function ClashGameMode:ExampleConsoleCommand()
 		if playerID ~= nil and playerID ~= -1 then
 			-- Do something here for the player who called this command
 		end
+	end
+
+	print( '*********************************************' )
+end
+
+function ClashGameMode:CheatSetSouls(soulCount)
+	local cmdPlayer = Convars:GetCommandClient()
+	if cmdPlayer then
+		local hero = cmdPlayer:GetAssignedHero()
+		ClashGameMode:SetNewSouls(hero, tonumber(soulCount))
 	end
 
 	print( '*********************************************' )
