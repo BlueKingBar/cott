@@ -181,7 +181,7 @@ function ClashGameMode:InitGameMode()
 		self.pickupSpots[k] = pspot
 	end
 
-	--Data for base healers
+	--[[Data for base healers
 	self.basePointsRadiant = Entities:FindAllByName("healer_radiant")
 	self.basesRadiant = {}
 	self.basePointsDire = Entities:FindAllByName("healer_dire")
@@ -201,7 +201,7 @@ function ClashGameMode:InitGameMode()
 		base:AddAbility("cott_spot_ability")
 		base:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		self.basesDire[k] = base 
-	end
+	end]]
 
 	print('[COTT] values set')
 
@@ -357,7 +357,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
-					nearPot = false
+					nearPot = false,
+					prevHP = nil,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -402,11 +403,13 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					local oldSouls = v.souls
 					local oldHealth = hero:GetHealth()
+					local oldMana = hero:GetMana()
 					self:SetNewSouls(hero, math.max(v.souls - 1, 0))
 
-					--Heal the hero based on souls accumulated, so they don't lose HP while depositing.
+					--Heal the hero.
 					if hero:IsAlive() then
-						hero:SetHealth(oldHealth)
+						hero:SetHealth(oldHealth + 50)
+						hero:SetMana(oldMana + 50)
 					end
 
 					--Set team score based on team of hero
@@ -513,9 +516,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 							self:SetNewSouls(hero, playerTable.souls + 3)
 
-							--Heal up the hero's hp and mana
 							if hero:IsAlive() then
-								playerTable.regen = true
+								--playerTable.regen = true
 								heroFound = true
 							end
 						end
@@ -532,7 +534,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			return GameRules:GetGameTime() + 0.1
 		end})
 
-	self:CreateTimer("soul_burn_and_regen", {
+	--[[self:CreateTimer("soul_burn_and_regen", {
 		endTime = GameRules:GetGameTime() + 1.0,
 		useGameTime = true,
 		callback = function(cott, args)
@@ -549,7 +551,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				end
 			end
 			return GameRules:GetGameTime() + 1.0
-		end})
+		end})]]
 
 	self:CreateTimer("pot_particles", {
 		endTime = Time(),
@@ -565,7 +567,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			end
 		end})
 
-	self:CreateTimer("healer_think", {
+	--[[self:CreateTimer("healer_think", {
 		endTime = GameRules:GetGameTime(),
 		useGameTime = true,
 		callback = function(cott, args)
@@ -609,6 +611,27 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					ParticleManager:ReleaseParticleIndex(particle)
 				end
 			end
+		end})]]
+
+	self:CreateTimer("heal_negate", {
+		endTime = GameRules:GetGameTime(),
+		useGameTime = true,
+		callback = function(cott, args)
+			for k, v in pairs(self.vPlayers) do
+				local hero = v.hero
+				local prevHP = v.prevHP
+				local currHP = hero:GetHealth()
+				
+				if prevHP and (currHP - prevHP) > 15 then
+					local HPDiff = currHP - prevHP
+					if hero:IsAlive() then
+						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.0075, 0.9)))
+					end
+				end
+
+				v.prevHP = currHP
+			end
+			return GameRules:GetGameTime() + 0.1
 		end})
 
 end
