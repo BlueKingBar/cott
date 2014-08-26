@@ -354,7 +354,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					bRoundInit = false,
 					name = self.vUserNames[keys.userid],
 					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
-					defaultMS = self.heroKV[heroEntity:GetClassname()].MovementSpeed or 0, --if it's 0 something went wrong
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
@@ -936,9 +935,6 @@ function ClashGameMode:SetNewSouls(hero, souls)
   local newNewMaxDamage = hero:GetBaseDamageMax()
   hero:SetBaseDamageMin( newNewMinDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
   hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
-
-  --Set movespeed change based on number of souls change.
-  hero:SetBaseMoveSpeed(v.defaultMS * math.max(1.0 - (0.006667 * souls), 0.2))
 
 	hero:CalculateStatBonus()
 
