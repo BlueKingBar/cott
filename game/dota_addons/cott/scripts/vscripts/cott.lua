@@ -34,8 +34,7 @@ if ClashGameMode == nil then
 end
 
 function ClashGameMode:InitGameMode()
-		print( "Template addon is loaded." )
-		
+		print( "[COTT] Clash of the Titans addon is loaded." )		
 end
 
 GameMode = nil
@@ -218,7 +217,7 @@ function ClashGameMode:CaptureGameMode()
 		-- Disables recommended items...though I don't think it works
 		GameMode:SetRecommendedItemsDisabled( true )
 		-- Override the normal camera distance.  Usual is 1134
-		GameMode:SetCameraDistanceOverride( 1400.0 )
+		GameMode:SetCameraDistanceOverride( 1504.0 )
 		-- Set Buyback options
 		GameMode:SetCustomBuybackCostEnabled( true )
 		GameMode:SetCustomBuybackCooldownEnabled( true )
@@ -355,9 +354,11 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					bRoundInit = false,
 					name = self.vUserNames[keys.userid],
 					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
+					defaultMS = self.heroKV[heroEntity:GetClassname()].MovementSpeed or 0, --if it's 0 something went wrong
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
+					nearPot = false
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -396,6 +397,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				local hero = v.hero
 				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 320)
 				if pot and hero then
+
+					--Stop soul burn if the hero is near the pot.
+					v.nearPot = true
+
 					local oldSouls = v.souls
 					local oldHealth = hero:GetHealth()
 					self:SetNewSouls(hero, math.max(v.souls - 1, 0))
@@ -422,6 +427,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						ParticleManager:SetParticleControl(particle, 2, hero:GetCenter())
 						ParticleManager:ReleaseParticleIndex(particle)
 					end
+				elseif not pot then
+					--Resume soul burn once the hero leaves the pot area.
+					v.nearPot = false
 				end
 
 				if self.nRadiantScore >= POINTS_TO_WIN then
@@ -533,9 +541,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				local hero = v.hero
 				if hero and hero:IsAlive() then
 					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
-					if not v.regen then
+					if not v.regen and not v.nearPot then
 						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .036)), 1))
-					else
+					elseif v.regen then
 						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .0666))
 						hero:SetMana(hero:GetMana() + math.ceil(hero:GetMaxMana() * .0666))
 					end
@@ -721,7 +729,7 @@ function ClashGameMode:HandleEventError(name, event, err)
 	-- This gets fired when an event throws an error
 
 	-- Log to console
-	print(err)
+	print("[COTT] "..err)
 
 	-- Ensure we have data
 	name = tostring(name or 'unknown')
@@ -756,7 +764,7 @@ function ClashGameMode:CreateTimer(name, args)
 	]]
 
 	if not args.endTime or not args.callback then
-		print("Invalid timer created: "..name)
+		print("[COTT] Invalid timer created: "..name)
 		return
 	end
 
@@ -789,7 +797,7 @@ function ClashGameMode:RemoveTimers(killAll)
 end
 
 function ClashGameMode:ExampleConsoleCommand()
-	print( '******* Example Console Command ***************' )
+	print( '[COTT]* Example Console Command ***************' )
 	local cmdPlayer = Convars:GetCommandClient()
 	if cmdPlayer then
 		local playerID = cmdPlayer:GetPlayerID()
@@ -807,8 +815,6 @@ function ClashGameMode:CheatSetSouls(soulCount)
 		local hero = cmdPlayer:GetAssignedHero()
 		ClashGameMode:SetNewSouls(hero, tonumber(soulCount))
 	end
-
-	print( '*********************************************' )
 end
 
 function ClashGameMode:OnEntityKilled( keys )
@@ -930,6 +936,9 @@ function ClashGameMode:SetNewSouls(hero, souls)
   local newNewMaxDamage = hero:GetBaseDamageMax()
   hero:SetBaseDamageMin( newNewMinDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
   hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
+
+  --Set movespeed change based on number of souls change.
+  hero:SetBaseMoveSpeed(v.defaultMS * math.max(1.0 - (0.006667 * souls), 0.2))
 
 	hero:CalculateStatBonus()
 
