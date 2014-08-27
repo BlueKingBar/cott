@@ -181,6 +181,40 @@ function ClashGameMode:InitGameMode()
 		self.pickupSpots[k] = pspot
 	end
 
+	--Statues!
+	self.statuePointsRadiant = Entities:FindAllByName("statue_radiant")
+	self.statuesRadiant = {}
+
+	for k, v in pairs(self.statuePointsRadiant) do
+		print("[COTT] Making statue...")
+		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		statue:SetOriginalModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
+		statue:SetModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
+		statue:SetModelScale(1.48)
+		statue:SetHullRadius(64)
+		statue:AddAbility("cott_spot_ability")
+		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		self.statuesRadiant[k] = statue
+	end
+
+	self.statuePointsDire = Entities:FindAllByName("statue_dire")
+	self.statuesDire = {}
+
+	for k, v in pairs(self.statuePointsDire) do
+		print("[COTT] Making statue...")
+		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
+		statue:SetOriginalModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
+		statue:SetModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
+		statue:SetModelScale(1.48)
+		statue:SetHullRadius(64)
+		statue:AddAbility("cott_spot_ability")
+		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		statue:SetForwardVector(Vector(-1, 0, 0)) --[[Returns:void
+		Set the orientation of the entity to have this forward ''forwardVec''
+		]]
+		self.statuesDire[k] = statue
+	end
+
 	--[[Data for base healers
 	self.basePointsRadiant = Entities:FindAllByName("healer_radiant")
 	self.basesRadiant = {}
@@ -421,6 +455,32 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantScore)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
+
+					for k, v in pairs(self.statuesRadiant) do
+						local statueNo = math.ceil(self.nRadiantScore/(POINTS_TO_WIN/10))
+						if statueNo < 1 then
+							statueNo = 1
+						end
+						if statueNo > 10 then
+							statueNo = 10
+						end
+						self.statuesRadiant[k]:SetModelScale(1.48 + 0.148 * (statueNo - 1))
+						self.statuesRadiant[k]:SetOriginalModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
+						self.statuesRadiant[k]:SetModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
+					end
+
+					for k, v in pairs(self.statuesDire) do
+						local statueNo = math.ceil(self.nDireScore/(POINTS_TO_WIN/10))
+						if statueNo < 1 then
+							statueNo = 1
+						end
+						if statueNo > 10 then
+							statueNo = 10
+						end
+						self.statuesDire[k]:SetModelScale(1.48 + 0.148 * (statueNo - 1))
+						self.statuesDire[k]:SetOriginalModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
+						self.statuesDire[k]:SetModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
+					end
 
 					--Make a particle for the soul siphon effect.
 					if oldSouls ~= v.souls then
