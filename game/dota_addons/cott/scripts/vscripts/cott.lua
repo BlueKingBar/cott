@@ -359,7 +359,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					regen = false,
 					nearPot = false,
 					prevHP = nil,
-					deadFlag = false,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -626,13 +625,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						if v.deadFlag == false then
-							hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.03, 0.9)))
-						else
-							v.deadFlag = false
-						end
-					else
-						v.deadFlag = true
+						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.03, 0.9)))
 					end
 				end
 
