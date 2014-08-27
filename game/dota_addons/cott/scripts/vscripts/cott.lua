@@ -407,9 +407,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					self:SetNewSouls(hero, math.max(v.souls - 1, 0))
 
 					--Heal the hero.
-					if hero:IsAlive() then
-						hero:SetHealth(oldHealth + 50)
-						hero:SetMana(oldMana + 50)
+					if hero:IsAlive() and oldSouls > 0 then
+						hero:SetHealth(oldHealth + 2)
+						hero:SetMana(oldMana + 2)
 					end
 
 					--Set team score based on team of hero
@@ -944,7 +944,7 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	hero:SetBaseIntellect(hero:GetBaseIntellect() + soulDiff * STATS_PER_SOUL)
 
 	--Set damage change based on the number of souls change.
-  local casterLevel = hero:GetLevel()
+  --[[local casterLevel = hero:GetLevel()
   local minDamage = hero:GetBaseDamageMin()
   local maxDamage = hero:GetBaseDamageMax()
   hero:SetBaseDamageMin( minDamage )
@@ -957,7 +957,7 @@ function ClashGameMode:SetNewSouls(hero, souls)
   local newNewMinDamage = hero:GetBaseDamageMin()
   local newNewMaxDamage = hero:GetBaseDamageMax()
   hero:SetBaseDamageMin( newNewMinDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
-  hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
+  hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))]]
 
 	hero:CalculateStatBonus()
 
