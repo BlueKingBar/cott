@@ -359,6 +359,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					regen = false,
 					nearPot = false,
 					prevHP = nil,
+					deadFlag = false,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -390,7 +391,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 })
 
 	self:CreateTimer("pot_think", {
-		endTime = GameRules:GetGameTime() + 0.25,
+		endTime = GameRules:GetGameTime(),
 		useGameTime = true,
 		callback = function(cott, args)
 			for k, v in pairs(self.vPlayers) do
@@ -408,8 +409,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero.
 					if hero:IsAlive() and oldSouls > 0 then
-						hero:SetHealth(oldHealth + 2)
-						hero:SetMana(oldMana + 2)
+						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.02)
+						hero:SetMana(oldMana + hero:GetMaxMana() * 0.02)
 					end
 
 					--Set team score based on team of hero
@@ -441,7 +442,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				end
 
 			end
-			return GameRules:GetGameTime() + 0.25
+			return GameRules:GetGameTime() + 0.33
 		end})
 
 	self:CreateTimer("start_soul_add", {
@@ -625,7 +626,13 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.03, 0.9)))
+						if v.deadFlag == false then
+							hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.03, 0.9)))
+						else
+							v.deadFlag = false
+						end
+					else
+						v.deadFlag = true
 					end
 				end
 
@@ -889,7 +896,7 @@ function ClashGameMode:OnEntityKilled( keys )
 
 			killerEntity = self.vPlayers[killedTable.lastAttacker].hero
 
-			self:SetNewSouls(killerEntity, killerTable.souls + 2 + oldVictimSouls)
+			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
 		end
 
 		killedTable.lastAttacker = -1
