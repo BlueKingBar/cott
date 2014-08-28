@@ -209,9 +209,7 @@ function ClashGameMode:InitGameMode()
 		statue:SetHullRadius(64)
 		statue:AddAbility("cott_spot_ability")
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-		statue:SetForwardVector(Vector(-1, 0, 0)) --[[Returns:void
-		Set the orientation of the entity to have this forward ''forwardVec''
-		]]
+		statue:SetForwardVector(Vector(-1, 0, 0))
 		self.statuesDire[k] = statue
 	end
 
@@ -432,7 +430,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 320)
 				if pot and hero then
 
-					--Stop soul burn if the hero is near the pot.
 					v.nearPot = true
 
 					local oldSouls = v.souls
@@ -442,8 +439,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero.
 					if hero:IsAlive() and oldSouls > 0 then
-						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.1)
-						hero:SetMana(oldMana + hero:GetMaxMana() * 0.1)
+						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.0333)
+						hero:SetMana(oldMana + hero:GetMaxMana() * 0.0333)
 					end
 
 					--Set team score based on team of hero
