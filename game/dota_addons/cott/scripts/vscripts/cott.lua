@@ -203,9 +203,9 @@ function ClashGameMode:InitGameMode()
 	for k, v in pairs(self.statuePointsDire) do
 		print("[COTT] Making statue...")
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
-		statue:SetOriginalModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
-		statue:SetModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
-		statue:SetModelScale(1.48)
+		statue:SetOriginalModel("models/qop_statue/qop_statue_000001.vmdl")
+		statue:SetModel("models/qop_statue/qop_statue_000001.vmdl")
+		statue:SetModelScale(1.68)
 		statue:SetHullRadius(64)
 		statue:AddAbility("cott_spot_ability")
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
@@ -477,9 +477,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						if statueNo > 10 then
 							statueNo = 10
 						end
-						self.statuesDire[k]:SetModelScale(1.48 + 0.148 * (statueNo - 1))
-						self.statuesDire[k]:SetOriginalModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
-						self.statuesDire[k]:SetModel(string.format("models/enchantress_statue/enchantress_statue_%06d.vmdl", statueNo))
+						self.statuesDire[k]:SetModelScale(1.68 + 0.200 * (statueNo - 1))
+						self.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+						self.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 					end
 
 					--Make a particle for the soul siphon effect.
