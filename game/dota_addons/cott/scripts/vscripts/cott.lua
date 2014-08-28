@@ -442,8 +442,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 					--Heal the hero.
 					if hero:IsAlive() and oldSouls > 0 then
-						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.02)
-						hero:SetMana(oldMana + hero:GetMaxMana() * 0.02)
+						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.1)
+						hero:SetMana(oldMana + hero:GetMaxMana() * 0.1)
 					end
 
 					--Set team score based on team of hero
