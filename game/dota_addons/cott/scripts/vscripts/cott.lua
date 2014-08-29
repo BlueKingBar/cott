@@ -712,12 +712,12 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			for k, v in pairs(self.vPlayers) do
 				local hero = v.hero
 				local prevHP = v.prevHP
-				local currHP = hero:GetHealth()
+				local currHP = hero:GetHealth()/hero:GetMaxHealth()
 				
 				if prevHP and (currHP - prevHP) > 0 then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.016667, 0.25)))
+						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.min(v.souls * 0.016667, 0.25)))
 					end
 				end
 
