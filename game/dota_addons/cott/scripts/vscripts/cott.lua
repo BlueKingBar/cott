@@ -537,7 +537,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		end})
 
 	self:CreateTimer("start_soul_add", {
-		endTime = Time() + 0.1,
+		endTime = Time(),
 		useGameTime = false,
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
@@ -562,7 +562,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		end})
 
 	self:CreateTimer("start_pickup_spawn", {
-		endTime = Time() + 0.1,
+		endTime = Time(),
 		useGameTime = false,
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
@@ -717,7 +717,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.03, 0.9)))
+						hero:SetHealth(math.ceil(currHP - HPDiff * math.min(v.souls * 0.016667, 0.25)))
 					end
 				end
 
