@@ -14,6 +14,7 @@ SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
 SOUL_SCALE_MAX = 120
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
+CREEPS_PER_SOUL = 8 --Every player on a given team gains a soul after this many creeps are pushed onto the pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
@@ -150,6 +151,9 @@ function ClashGameMode:InitGameMode()
 	self.nRadiantScore = 0
 	self.nDireScore = 0
 
+	self.nRadiantCreeps = 0
+	self.nDireCreeps = 0
+
 	-- Data for soul pots
 	self.soulPotPoints = Entities:FindAllByName("pot_point")
 	self.soulPots = {}
@@ -178,7 +182,39 @@ function ClashGameMode:InitGameMode()
 		pspot:SetHullRadius(0)
 		pspot:AddAbility("cott_spot_ability")
 		pspot:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		pspot:AddNewModifier(pspot, nil, "modifier_phased", {})
 		self.pickupSpots[k] = pspot
+	end
+
+	--Creep eaters. Radiant eaters eat Dire creeps and vice versa.
+	self.eaterPointsRadiant = Entities:FindAllByName("creep_eater_radiant")
+	self.eatersRadiant = {}
+
+	for k, v in pairs(self.eaterPointsRadiant) do
+		local eater = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+		eater:SetOriginalModel("models/heroes/pedestal/pedestal_1_small.vmdl")
+		eater:SetModel("models/heroes/pedestal/pedestal_1_small.vmdl")
+		eater:SetModelScale(1.0)
+		eater:SetHullRadius(0)
+		eater:AddAbility("cott_spot_ability")
+		eater:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		eater:AddNewModifier(eater, nil, "modifier_phased", {})
+		self.eatersRadiant[k] = eater
+	end
+
+	self.eaterPointsDire = Entities:FindAllByName("creep_eater_dire")
+	self.eatersDire = {}
+
+	for k, v in pairs(self.eaterPointsDire) do
+		local eater = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+		eater:SetOriginalModel("models/heroes/pedestal/pedestal_1_small.vmdl")
+		eater:SetModel("models/heroes/pedestal/pedestal_1_small.vmdl")
+		eater:SetModelScale(1.0)
+		eater:SetHullRadius(0)
+		eater:AddAbility("cott_spot_ability")
+		eater:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		eater:AddNewModifier(eater, nil, "modifier_phased", {})
+		self.eatersDire[k] = eater
 	end
 
 	--Statues!
@@ -186,7 +222,6 @@ function ClashGameMode:InitGameMode()
 	self.statuesRadiant = {}
 
 	for k, v in pairs(self.statuePointsRadiant) do
-		print("[COTT] Making statue...")
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
 		statue:SetOriginalModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
 		statue:SetModel("models/enchantress_statue/enchantress_statue_000001.vmdl")
@@ -201,7 +236,6 @@ function ClashGameMode:InitGameMode()
 	self.statuesDire = {}
 
 	for k, v in pairs(self.statuePointsDire) do
-		print("[COTT] Making statue...")
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
 		statue:SetOriginalModel("models/qop_statue/qop_statue_000001.vmdl")
 		statue:SetModel("models/qop_statue/qop_statue_000001.vmdl")
@@ -261,7 +295,7 @@ function ClashGameMode:CaptureGameMode()
 		--GameMode:SetCustomHeroMaxLevel ( MAX_LEVEL )
 		--GameMode:SetCustomXPRequiredToReachNextLevel( XP_PER_LEVEL_TABLE )
 		-- Chage the minimap icon size
-		GameRules:SetHeroMinimapIconSize( 300 )
+		--GameRules:SetHeroMinimapIconSize( 300 )
 
 		print( '[COTT] Beginning Think' ) 
 		GameMode:SetContextThink("ClashThink", Dynamic_Wrap( ClashGameMode, 'Think' ), 0.1 )
@@ -435,19 +469,20 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					local oldSouls = v.souls
 					local oldHealth = hero:GetHealth()
 					local oldMana = hero:GetMana()
-					self:SetNewSouls(hero, math.max(v.souls - 1, 0))
+					self:SetNewSouls(hero, 0)
+					local soulDiff = v.souls - oldSouls
 
 					--Heal the hero.
 					if hero:IsAlive() and oldSouls > 0 then
-						hero:SetHealth(oldHealth + hero:GetMaxHealth() * 0.0333)
-						hero:SetMana(oldMana + hero:GetMaxMana() * 0.0333)
+						hero:SetHealth(oldHealth + -soulDiff * hero:GetMaxHealth() * 0.04)
+						hero:SetMana(oldMana + -soulDiff * hero:GetMaxMana() * 0.04)
 					end
 
 					--Set team score based on team of hero
 					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-						self.nRadiantScore = self.nRadiantScore + (oldSouls - v.souls)
+						self.nRadiantScore = self.nRadiantScore + -soulDiff
 					elseif hero:GetTeam() == DOTA_TEAM_BADGUYS then
-						self.nDireScore = self.nDireScore + (oldSouls - v.souls)
+						self.nDireScore = self.nDireScore + -soulDiff
 					end
 
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantScore)
@@ -498,7 +533,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				end
 
 			end
-			return GameRules:GetGameTime() + 0.33
+			return GameRules:GetGameTime() + 0.2
 		end})
 
 	self:CreateTimer("start_soul_add", {
@@ -560,7 +595,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		end})
 
 	self:CreateTimer("pickup_think", {
-		endTime = GameRules:GetGameTime() + 0.1,
+		endTime = GameRules:GetGameTime(),
 		useGameTime = true,
 		callback = function(cott, args)
 			for k, v in pairs(self.pickups) do
@@ -571,7 +606,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						if hero:IsRealHero() then
 							local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-							self:SetNewSouls(hero, playerTable.souls + 3)
+							self:SetNewSouls(hero, playerTable.souls + 2)
 
 							if hero:IsAlive() then
 								--playerTable.regen = true
@@ -688,6 +723,158 @@ function ClashGameMode:AutoAssignPlayer(keys)
 
 				v.prevHP = currHP
 			end
+			return GameRules:GetGameTime() + 0.1
+		end})
+
+	self:CreateTimer("eater_think", {
+		endTime = GameRules:GetGameTime(),
+		useGameTime = true,
+		callback = function(cott, args)
+			for k, v in pairs(self.eatersRadiant) do
+				if self.eatersRadiant[k] ~= nil then
+					local creep = Entities:FindByClassnameNearest("npc_dota_creep_lane", self.eaterPointsRadiant[k]:GetCenter(), 96)
+					if creep then
+						if creep:GetTeam() == DOTA_TEAM_BADGUYS then
+							self.nDireCreeps = self.nDireCreeps + 1
+							
+							local slots = 0
+							if math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 100) > 0 then
+								slots = 3
+							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 10) > 0 then
+								slots = 2
+							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 1) > 0 then
+								slots = 1
+							end
+
+							if slots > 0 then
+								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersRadiant[k])
+								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nDireCreeps, 0))
+								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
+								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
+
+							if self.nDireCreeps >= CREEPS_PER_SOUL then
+								for k, v in pairs(self.vPlayers) do
+									if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
+										self:SetNewSouls(v.hero, v.souls + 1)
+									end
+								end
+								self.nDireCreeps = 0
+							end
+							UTIL_RemoveImmediate(creep)
+						end
+					end
+
+					local creep = Entities:FindByClassnameNearest("npc_dota_creep_siege", self.eaterPointsRadiant[k]:GetCenter(), 96)
+					if creep then
+						if creep:GetTeam() == DOTA_TEAM_BADGUYS then
+							self.nDireCreeps = self.nDireCreeps + 1
+
+							local slots = 0
+							if math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 100) > 0 then
+								slots = 3
+							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 10) > 0 then
+								slots = 2
+							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 1) > 0 then
+								slots = 1
+							end
+
+							if slots > 0 then
+								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersRadiant[k])
+								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nDireCreeps, 0))
+								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
+								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
+
+							if self.nDireCreeps >= CREEPS_PER_SOUL then
+								for k, v in pairs(self.vPlayers) do
+									if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
+										self:SetNewSouls(v.hero, v.souls + 1)
+									end
+								end
+								self.nDireCreeps = 0
+							end
+							UTIL_RemoveImmediate(creep)
+						end
+					end
+				end
+			end
+
+			for k, v in pairs(self.eatersDire) do
+				if self.eatersDire[k] ~= nil then
+					local creep = Entities:FindByClassnameNearest("npc_dota_creep_lane", self.eaterPointsDire[k]:GetCenter(), 96)
+					if creep then
+						if creep:GetTeam() == DOTA_TEAM_GOODGUYS then
+							self.nRadiantCreeps = self.nRadiantCreeps + 1
+
+							local slots = 0
+							if math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 100) > 0 then
+								slots = 3
+							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 10) > 0 then
+								slots = 2
+							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 1) > 0 then
+								slots = 1
+							end
+
+							if slots > 0 then
+								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersDire[k])
+								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nRadiantCreeps, 0))
+								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
+								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
+
+
+							if self.nRadiantCreeps >= CREEPS_PER_SOUL then
+								for k, v in pairs(self.vPlayers) do
+									if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
+										self:SetNewSouls(v.hero, v.souls + 1)
+									end
+								end
+								self.nRadiantCreeps = 0
+							end
+							UTIL_RemoveImmediate(creep)
+						end
+					end
+
+					local creep = Entities:FindByClassnameNearest("npc_dota_creep_siege", self.eaterPointsDire[k]:GetCenter(), 96)
+					if creep then
+						if creep:GetTeam() == DOTA_TEAM_GOODGUYS then
+							self.nRadiantCreeps = self.nRadiantCreeps + 1
+
+							local slots = 0
+							if math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 100) > 0 then
+								slots = 3
+							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 10) > 0 then
+								slots = 2
+							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 1) > 0 then
+								slots = 1
+							end
+
+							if slots > 0 then
+								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersDire[k])
+								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nRadiantCreeps, 0))
+								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
+								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
+
+							if self.nRadiantCreeps >= CREEPS_PER_SOUL then
+								for k, v in pairs(self.vPlayers) do
+									if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
+										self:SetNewSouls(v.hero, v.souls + 1)
+									end
+								end
+								self.nRadiantCreeps = 0
+							end
+							UTIL_RemoveImmediate(creep)
+						end
+					end
+				end
+			end
+
 			return GameRules:GetGameTime() + 0.1
 		end})
 
