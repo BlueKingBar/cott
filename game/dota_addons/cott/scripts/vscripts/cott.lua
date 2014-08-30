@@ -14,7 +14,7 @@ SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
 SOUL_SCALE_MAX = 120
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-CREEPS_PER_SOUL = 8 --Every player on a given team gains a soul after this many creeps are pushed onto the pad.
+CREEPS_PER_SOUL = 4 --Every player on a given team gains a soul after this many creeps are pushed onto the pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
@@ -75,6 +75,7 @@ function ClashGameMode:InitGameMode()
 	ListenToGameEvent('player_connect', Dynamic_Wrap(ClashGameMode, 'PlayerConnect'), self)
 	--ListenToGameEvent('player_info', Dynamic_Wrap(ClashGameMode, 'PlayerInfo'), self)
 	ListenToGameEvent('dota_player_used_ability', Dynamic_Wrap(ClashGameMode, 'AbilityUsed'), self)
+	ListenToGameEvent('npc_spawned', Dynamic_Wrap(ClashGameMode, 'UnitSpawned'), self)
 
 	Convars:RegisterCommand( "command_example", Dynamic_Wrap(ClashGameMode, 'ExampleConsoleCommand'), "A console command example", 0 )
 	Convars:RegisterCommand( "set_souls", Dynamic_Wrap(ClashGameMode, 'CheatSetSouls'), "Sets the number of souls you have.", FCVAR_CHEAT )
@@ -247,6 +248,14 @@ function ClashGameMode:InitGameMode()
 		self.statuesDire[k] = statue
 	end
 
+	--Heal negator. Applies a modifier to all heroes that negates healing as they get larger.
+	self.healNegator = CreateUnitByName("npc_dota_units_base", Vector(0, 0, 0), false, nil, nil, DOTA_TEAM_NEUTRALS)
+	self.healNegator:AddAbility("cott_spot_ability")
+	self.healNegator:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+	self.healNegator:AddAbility("cott_heal_negation")
+	self.healNegator:FindAbilityByName("cott_heal_negation"):SetLevel(1)
+	self.healNegator:AddNewModifier(eater, nil, "modifier_phased", {})
+
 	--[[Data for base healers
 	self.basePointsRadiant = Entities:FindAllByName("healer_radiant")
 	self.basesRadiant = {}
@@ -313,6 +322,15 @@ function ClashGameMode:SetupMultiTeams()
 end
 
 function ClashGameMode:AbilityUsed(keys)
+end
+
+function ClashGameMode:UnitSpawned(keys)
+	local hero = EntIndexToHScript(keys.entindex)
+
+	if hero and hero:IsRealHero() then
+		--Add heal negation modifier to all heroes.
+		self.healNegator:CastAbilityOnTarget(hero, self.healNegator:FindAbilityByName("cott_heal_negation"), -1)
+	end
 end
 
 -- Cleanup a player when they leave
@@ -425,6 +443,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					regen = false,
 					nearPot = false,
 					prevHP = nil,
+					healEvent = false,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -606,7 +625,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						if hero:IsRealHero() then
 							local playerTable = self.vPlayers[hero:GetPlayerID()]
 
-							self:SetNewSouls(hero, playerTable.souls + 2)
+							self:SetNewSouls(hero, playerTable.souls + 4)
 
 							if hero:IsAlive() then
 								--playerTable.regen = true
@@ -712,13 +731,14 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			for k, v in pairs(self.vPlayers) do
 				local hero = v.hero
 				local prevHP = v.prevHP
-				local currHP = hero:GetHealth()/hero:GetMaxHealth()
+				local currHP = hero:GetHealth()
 				
-				if prevHP and (currHP - prevHP) > 0 then
+				if prevHP and (currHP - prevHP) > 0 and v.healEvent == true then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.min(v.souls * 0.025, 0.75)))
+						hero:SetHealth(currHP - HPDiff * math.min(v.souls * 0.025, 0.75))
 					end
+					v.healEvent = false
 				end
 
 				v.prevHP = currHP

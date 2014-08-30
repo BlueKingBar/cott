@@ -51,6 +51,46 @@
     }
   }
 
+  "cott_heal_negation"
+  {
+    "AbilityBehavior"             "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "BaseClass"                   "ability_datadriven"
+    "AbilityTextureName"          "rubick_empty1"
+    "MaxLevel"                    "1"
+    "AbilityUnitTargetTeam"     "DOTA_UNIT_TARGET_TEAM_BOTH"
+    "AbilityUnitTargetType"     "DOTA_UNIT_TARGET_HERO | DOTA_UNIT_TARGET_BASIC"
+    "AbilityCastPoint"  "0.0"
+    "AbilityCastRange"  "999999"
+    
+    "OnSpellStart"
+    {
+      "ApplyModifier"
+      {
+        "Target" "TARGET"
+        "ModifierName" "modifier_heal_negation"
+      }
+    }
+
+    "Modifiers"
+    {
+      "modifier_heal_negation"
+      {
+        "IsHidden"                "1"
+        "IsPurgeable"             "0"
+
+        "OnHealReceived"
+        {
+          "RunScript"
+          {
+            "ScriptFile"    "custom_abilities.lua"
+            "Function"    "CottHealEvent"
+            "Target"    "CASTER"
+          }
+        }
+      }
+    }
+  }
+
   "cott_flesh_armor"
   {
     // General

@@ -1,27 +1,9 @@
-function GrowStickOnCreated( keys )
-	-- Get the target of this spell
-	local targetUnit = keys.caster
-	if targetUnit == nil then
-		return
-	end
-	
-	if size == nil then
-		size = 1.1
-	else
-		size = size + 0.1
-	end
-	
-	targetUnit:SetModelScale(size)
-end
+function CottHealEvent( keys )
 
-function GrowStickOnDestroy( keys )
-	-- Get the target of this spell
-	local targetUnit = keys.caster
-	if targetUnit == nil then
-		return
+	local hero = keys.target_entities[1]
+
+	if hero and hero:IsRealHero() then
+		local v = ClashGameMode.vPlayers[hero:GetPlayerID()]
+		v.healEvent = true
 	end
-	
-	size = size - 0.1
-	
-	targetUnit:SetModelScale(size)
 end
