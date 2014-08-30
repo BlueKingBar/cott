@@ -561,7 +561,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
 				self:CreateTimer("soul_add", {
-					endTime = GameRules:GetGameTime() + SOUL_TIME,
+					endTime = GameRules:GetGameTime(),
 					useGameTime = true,
 					callback = function(cott, args)
 						for k, v in pairs(self.vPlayers) do
@@ -586,7 +586,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
 				self:CreateTimer("pickup_spawn", {
-					endTime = GameRules:GetGameTime() + PICKUP_TIME,
+					endTime = GameRules:GetGameTime(),
 					useGameTime = true,
 					callback = function(cott, args)
 						local keys = {}
@@ -896,6 +896,27 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			end
 
 			return GameRules:GetGameTime() + 0.1
+		end})
+
+		self:CreateTimer("start_xp_gain", {
+		endTime = Time(),
+		useGameTime = false,
+		callback = function(cott, args)
+			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
+				self:CreateTimer("xp_gain", {
+					endTime = GameRules:GetGameTime(),
+					useGameTime = true,
+					callback = function(cott, args)
+						for k, v in pairs(self.vPlayers) do
+							if v.hero and v.hero:IsRealHero() then
+								v.hero:AddExperience(10, false)
+							end
+						end
+						return GameRules:GetGameTime() + 1.0
+					end})
+				return
+			end
+			return Time() + 0.1
 		end})
 
 end
