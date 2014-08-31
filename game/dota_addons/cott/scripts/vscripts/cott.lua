@@ -561,7 +561,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
 				self:CreateTimer("soul_add", {
-					endTime = GameRules:GetGameTime(),
+					endTime = GameRules:GetGameTime() + SOUL_TIME,
 					useGameTime = true,
 					callback = function(cott, args)
 						for k, v in pairs(self.vPlayers) do
@@ -586,7 +586,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 		callback = function(cott, args)
 			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
 				self:CreateTimer("pickup_spawn", {
-					endTime = GameRules:GetGameTime(),
+					endTime = GameRules:GetGameTime() + PICKUP_TIME,
 					useGameTime = true,
 					callback = function(cott, args)
 						local keys = {}
@@ -1222,6 +1222,15 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	hero:SetModelScale(v.defaultScale + math.min(v.defaultScale * SCALE_PER_SOUL * v.souls, v.defaultScale * SCALE_PER_SOUL * SOUL_SCALE_MAX))
 
 	local soulDiff = souls - oldSouls
+
+
+	-- Fire event for Flash to use.
+	local eventTable = {
+		nPlayerID = hero:GetPlayerID(),
+		nSouls = souls,
+		nSoulDiff = soulDiff,
+	}
+	FireGameEvent( "cott_souls_change", eventTable )
 
 	-- Set attribute change based on the number of souls change.
 	hero:SetBaseStrength(hero:GetBaseStrength() + soulDiff * STATS_PER_SOUL)

@@ -1,0 +1,9 @@
+"CustomEvents"
+{
+	"cott_souls_change"
+	{
+		"nPlayerID"              "short"
+		"nSouls"                 "long"
+		"nSoulDiff"              "long"
+	}
+}
