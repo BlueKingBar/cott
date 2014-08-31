@@ -1255,19 +1255,27 @@ function ClashGameMode:SetNewSouls(hero, souls)
 
 	hero:CalculateStatBonus()
 
+	soulDiffAbs = math.abs(soulDiff)
+
 	local slots = 0
-	if math.floor(souls / 100) > 0 then
+	if math.floor(soulDiffAbs / 100) > 0 then
+		slots = 4
+	elseif math.floor(soulDiffAbs / 10) > 0 then
 		slots = 3
-	elseif math.floor(souls / 10) > 0 then
+	elseif math.floor(soulDiffAbs / 1) > 0 then
 		slots = 2
-	elseif math.floor(souls / 1) > 0 then
-		slots = 1
+	end
+
+	local sign = 10
+
+	if soulDiff < 0 then
+		sign = 1
 	end
 
 	-- Particle showing number of souls
 	if slots > 0 then
 		local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, hero)
-		ParticleManager:SetParticleControl(particle, 1, Vector(0, souls, 0))
+		ParticleManager:SetParticleControl(particle, 1, Vector(sign, soulDiffAbs, 0))
 		ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
 		ParticleManager:SetParticleControl(particle, 3, Vector(0, 200, 128))
 		ParticleManager:ReleaseParticleIndex(particle)
