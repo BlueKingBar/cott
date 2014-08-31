@@ -87,6 +87,11 @@
             "Target"    "CASTER"
           }
         }
+
+        "Properties"
+        {
+          "MODIFIER_PROPERTY_MANA_REGEN_CONSTANT"      "1.2"
+        }
       }
     }
   }
