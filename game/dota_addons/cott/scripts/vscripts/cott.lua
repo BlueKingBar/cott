@@ -1165,8 +1165,17 @@ function ClashGameMode:OnEntityKilled( keys )
 		if killerEntity and killerEntity:IsRealHero() and keys.entindex_killed ~= keys.entindex_attacker then
 			local killerTable = self.vPlayers[killerEntity:GetPlayerID()]
 
+			local oldKillerSouls = killerTable.souls
+
 			--Steal all the victim's souls.
 			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
+
+			--Heal the hero if their soul count was lower than their victim's.
+			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
+			if killerEntity:IsAlive() and victimSoulAdvantage > 0 then
+				killerEntity:SetHealth(killerEntity:GetHealth() + victimSoulAdvantage * killerEntity:GetMaxHealth() * 0.04)
+				killerEntity:SetMana(killerEntity:GetMana() + victimSoulAdvantage * killerEntity:GetMaxMana() * 0.04)
+			end
 
 		--This is for if creeps or towers kill a hero. It'll credit the kill to the last person who hit them, assuming someone hit them since their last death.
 		elseif killerEntity and killedTable.lastAttacker >= 0 and keys.entindex_killed ~= keys.entindex_attacker then
@@ -1174,7 +1183,17 @@ function ClashGameMode:OnEntityKilled( keys )
 
 			killerEntity = self.vPlayers[killedTable.lastAttacker].hero
 
+			local oldKillerSouls = killerTable.souls
+
+			--Steal all the victim's souls.
 			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
+
+			--Heal the hero if their soul count was lower than their victim's.
+			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
+			if killerEntity:IsAlive() and victimSoulAdvantage > 0 then
+				killerEntity:SetHealth(killerEntity:GetHealth() + victimSoulAdvantage * killerEntity:GetMaxHealth() * 0.04)
+				killerEntity:SetMana(killerEntity:GetMana() + victimSoulAdvantage * killerEntity:GetMaxMana() * 0.04)
+			end
 		end
 
 		killedTable.lastAttacker = -1
