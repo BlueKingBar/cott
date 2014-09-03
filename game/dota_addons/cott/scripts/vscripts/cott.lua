@@ -437,7 +437,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					nTeam = ply:GetTeam(),
 					bRoundInit = false,
 					name = self.vUserNames[keys.userid],
-					defaultScale = self.heroKV[heroEntity:GetClassname()].ModelScale or 0.0, --if it's 0.0 something went wrong
+					--The string.lower method is used to fix invoker, who has a capital I in his classname for some dumb reason.
+					defaultScale = self.heroKV[string.lower(heroEntity:GetClassname())].ModelScale or 0.0, --if it's 0.0 something went wrong
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
