@@ -4,20 +4,21 @@ DEBUG=true
 USE_LOBBY=false
 THINK_TIME = 0.1
 
-STARTING_GOLD = 650--650
+STARTING_GOLD = 650 --Non-functional
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
 POINTS_TO_WIN = 400
 RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 0.75
-DMG_PER_SOUL = 1
+DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MAX = 999
-SOUL_SCALE_MAX = 120
+SOUL_SCALE_MAX = 120 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
 CREEPS_PER_SOUL = 4 --Every player on a given team gains a soul after this many creeps are pushed onto the pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
+-- Non-functional. Default XP per level is enabled.
 XP_PER_LEVEL_TABLE = {}
 for i=1,MAX_LEVEL do
 	XP_PER_LEVEL_TABLE[i] = (i + 1) * 100
@@ -445,6 +446,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					nearPot = false,
 					prevHP = nil,
 					healEvent = false,
+					negationDisabled = false,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -496,6 +498,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					if hero:IsAlive() and oldSouls > 0 then
 						hero:SetHealth(oldHealth + -soulDiff * hero:GetMaxHealth() * 0.04)
 						hero:SetMana(oldMana + -soulDiff * hero:GetMaxMana() * 0.04)
+						v.negationDisabled = true
 					end
 
 					--Set team score based on team of hero
@@ -732,14 +735,17 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			for k, v in pairs(self.vPlayers) do
 				local hero = v.hero
 				local prevHP = v.prevHP
-				local currHP = hero:GetHealth()
+				local currHP = hero:GetHealth() / hero:GetMaxHealth()
 				
-				if prevHP and (currHP - prevHP) > 0 and v.healEvent == true then
+				if prevHP and (currHP - prevHP) > 0 and v.negationDisabled == false then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(currHP - HPDiff * math.min(v.souls * 0.025, 0.75))
+						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.min(v.souls * 0.025, 0.75)))
 					end
 					v.healEvent = false
+				end
+				if v.negationDisabled == true then
+					v.negationDisabled = false
 				end
 
 				v.prevHP = currHP
@@ -1176,6 +1182,7 @@ function ClashGameMode:OnEntityKilled( keys )
 			if killerEntity:IsAlive() and victimSoulAdvantage > 0 then
 				killerEntity:SetHealth(killerEntity:GetHealth() + victimSoulAdvantage * killerEntity:GetMaxHealth() * 0.04)
 				killerEntity:SetMana(killerEntity:GetMana() + victimSoulAdvantage * killerEntity:GetMaxMana() * 0.04)
+				killerTable.negationDisabled = true
 			end
 
 		--This is for if creeps or towers kill a hero. It'll credit the kill to the last person who hit them, assuming someone hit them since their last death.
@@ -1194,6 +1201,7 @@ function ClashGameMode:OnEntityKilled( keys )
 			if killerEntity:IsAlive() and victimSoulAdvantage > 0 then
 				killerEntity:SetHealth(killerEntity:GetHealth() + victimSoulAdvantage * killerEntity:GetMaxHealth() * 0.04)
 				killerEntity:SetMana(killerEntity:GetMana() + victimSoulAdvantage * killerEntity:GetMaxMana() * 0.04)
+				killerTable.negationDisabled = true
 			end
 		end
 

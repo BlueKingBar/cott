@@ -84,7 +84,7 @@
           {
             "ScriptFile"    "custom_abilities.lua"
             "Function"    "CottHealEvent"
-            "Target"    "CASTER"
+            "Target"    "UNIT"
           }
         }
 
