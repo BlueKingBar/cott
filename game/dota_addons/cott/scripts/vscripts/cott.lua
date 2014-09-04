@@ -236,7 +236,6 @@ function ClashGameMode:InitGameMode()
 
 	self.statuePointsDire = Entities:FindAllByName("statue_dire")
 	self.statuesDire = {}
-
 	for k, v in pairs(self.statuePointsDire) do
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
 		statue:SetOriginalModel("models/qop_statue/qop_statue_000001.vmdl")
@@ -519,9 +518,17 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						if statueNo > 10 then
 							statueNo = 10
 						end
+						local oldModel = self.statuesRadiant[k]:GetModelName()
 						self.statuesRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
 						self.statuesRadiant[k]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
 						self.statuesRadiant[k]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
+						if oldModel ~= self.statuesRadiant[k]:GetModelName() then
+							self.statuesRadiant[k]:EmitSoundParams("Tiny.Grow", 100, 1.0, 0.0)
+
+							local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_RENDERORIGIN_FOLLOW, self.statuesRadiant[k])
+							ParticleManager:SetParticleControl(particle, 0, self.statuesRadiant[k]:GetAbsOrigin())
+							ParticleManager:ReleaseParticleIndex(particle)
+						end
 					end
 
 					for k, v in pairs(self.statuesDire) do
@@ -532,9 +539,17 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						if statueNo > 10 then
 							statueNo = 10
 						end
+						local oldModel = self.statuesDire[k]:GetModelName()
 						self.statuesDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
 						self.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 						self.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+						if oldModel ~= self.statuesDire[k]:GetModelName() then
+							self.statuesDire[k]:EmitSoundParams("Tiny.Grow", 100, 1.0, 0.0)
+
+							local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_RENDERORIGIN_FOLLOW, self.statuesDire[k])
+							ParticleManager:SetParticleControl(particle, 0, self.statuesDire[k]:GetAbsOrigin())
+							ParticleManager:ReleaseParticleIndex(particle)
+						end
 					end
 
 					--Make a particle for the soul siphon effect.
