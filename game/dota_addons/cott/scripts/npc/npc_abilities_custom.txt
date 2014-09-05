@@ -51,7 +51,7 @@
     }
   }
 
-  "cott_heal_negation"
+  "cott_mana_regen"
   {
     "AbilityBehavior"             "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
     "BaseClass"                   "ability_datadriven"
@@ -67,26 +67,16 @@
       "ApplyModifier"
       {
         "Target" "TARGET"
-        "ModifierName" "modifier_heal_negation"
+        "ModifierName" "modifier_cott_mana_regen"
       }
     }
 
     "Modifiers"
     {
-      "modifier_heal_negation"
+      "modifier_cott_mana_regen"
       {
         "IsHidden"                "1"
         "IsPurgeable"             "0"
-
-        "OnHealReceived"
-        {
-          "RunScript"
-          {
-            "ScriptFile"    "custom_abilities.lua"
-            "Function"    "CottHealEvent"
-            "Target"    "UNIT"
-          }
-        }
 
         "Properties"
         {

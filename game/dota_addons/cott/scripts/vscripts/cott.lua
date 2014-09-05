@@ -11,10 +11,11 @@ RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 0.75
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
+SOUL_MIN = -20
 SOUL_MAX = 999
 SOUL_SCALE_MAX = 120 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-CREEPS_PER_SOUL = 4 --Every player on a given team gains a soul after this many creeps are pushed onto the pad.
+CREEPS_PER_SOUL = 1 --Every player on the enemy team loses a soul if this many creeps are pushed onto their pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
@@ -72,10 +73,8 @@ function ClashGameMode:InitGameMode()
 	ListenToGameEvent('player_connect_full', Dynamic_Wrap(ClashGameMode, 'AutoAssignPlayer'), self)
 	ListenToGameEvent('player_disconnect', Dynamic_Wrap(ClashGameMode, 'CleanupPlayer'), self)
 	ListenToGameEvent('dota_item_purchased', Dynamic_Wrap(ClashGameMode, 'ShopReplacement'), self)
-	ListenToGameEvent('player_say', Dynamic_Wrap(ClashGameMode, 'PlayerSay'), self)
 	ListenToGameEvent('player_connect', Dynamic_Wrap(ClashGameMode, 'PlayerConnect'), self)
-	--ListenToGameEvent('player_info', Dynamic_Wrap(ClashGameMode, 'PlayerInfo'), self)
-	ListenToGameEvent('dota_player_used_ability', Dynamic_Wrap(ClashGameMode, 'AbilityUsed'), self)
+	ListenToGameEvent('game_rules_state_change', Dynamic_Wrap(ClashGameMode, 'GameStateChanged'), self)
 	ListenToGameEvent('npc_spawned', Dynamic_Wrap(ClashGameMode, 'UnitSpawned'), self)
 
 	Convars:RegisterCommand( "command_example", Dynamic_Wrap(ClashGameMode, 'ExampleConsoleCommand'), "A console command example", 0 )
@@ -277,13 +276,13 @@ function ClashGameMode:InitGameMode()
 		self.invisibleTinyDire[k] = tiny
 	end
 
-	--Heal negator. Applies a modifier to all heroes that negates healing as they get larger.
-	self.healNegator = CreateUnitByName("npc_dota_units_base", Vector(0, 0, 0), false, nil, nil, DOTA_TEAM_NEUTRALS)
-	self.healNegator:AddAbility("cott_spot_ability")
-	self.healNegator:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-	self.healNegator:AddAbility("cott_heal_negation")
-	self.healNegator:FindAbilityByName("cott_heal_negation"):SetLevel(1)
-	self.healNegator:AddNewModifier(eater, nil, "modifier_phased", {})
+	--Mana regenner. Applies a modifier to all heroes that increases mana regen.
+	self.manaRegenner = CreateUnitByName("npc_dota_units_base", Vector(0, 0, 0), false, nil, nil, DOTA_TEAM_NEUTRALS)
+	self.manaRegenner:AddAbility("cott_spot_ability")
+	self.manaRegenner:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+	self.manaRegenner:AddAbility("cott_mana_regen")
+	self.manaRegenner:FindAbilityByName("cott_mana_regen"):SetLevel(1)
+	self.manaRegenner:AddNewModifier(eater, nil, "modifier_phased", {})
 
 	--[[Data for base healers
 	self.basePointsRadiant = Entities:FindAllByName("healer_radiant")
@@ -350,15 +349,71 @@ function ClashGameMode:SetupMultiTeams()
 	MultiTeam:CreateTeam("team2")
 end
 
-function ClashGameMode:AbilityUsed(keys)
-end
-
 function ClashGameMode:UnitSpawned(keys)
 	local hero = EntIndexToHScript(keys.entindex)
 
 	if hero and hero:IsRealHero() then
-		--Add heal negation modifier to all heroes.
-		self.healNegator:CastAbilityOnTarget(hero, self.healNegator:FindAbilityByName("cott_heal_negation"), -1)
+		--Add mana regen modifier to all heroes.
+		self.manaRegenner:CastAbilityOnTarget(hero, self.manaRegenner:FindAbilityByName("cott_mana_regen"), -1)
+	end
+end
+
+function ClashGameMode:GameStateChanged(keys)
+	if GameRules:State_Get() == DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
+		self:CreateTimer("soul_add", {
+			endTime = GameRules:GetGameTime() + SOUL_TIME,
+			useGameTime = true,
+			callback = function(cott, args)
+				for k, v in pairs(self.vPlayers) do
+					local hero = v.hero
+
+					--Add a soul periodically.
+					if hero then
+						self:SetNewSouls(hero, v.souls + 1 * v.totemMultiplier)
+					end
+				end
+
+				return GameRules:GetGameTime() + SOUL_TIME
+			end})
+
+		self:CreateTimer("pickup_spawn", {
+			endTime = GameRules:GetGameTime() + PICKUP_TIME,
+			useGameTime = true,
+			callback = function(cott, args)
+				local pickupKeys = {}
+				local i = 1
+				for k, v in pairs(self.pickupSpots) do
+					pickupKeys[i] = k
+					i = i + 1
+				end
+				if not self.pickups[1] then
+					v = self.pickupSpots[pickupKeys[RandomInt(1, #pickupKeys)]]
+					local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+					pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+					pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
+					pickup:SetModelScale(1.5)
+					pickup:SetHullRadius(0)
+					pickup:AddAbility("cott_pot_ability")
+					pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
+					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, pickup)
+					ParticleManager:SetParticleControl(particle, 0, pickup:GetCenter())
+					ParticleManager:ReleaseParticleIndex(particle)
+					self.pickups[1] = pickup
+				end
+				return GameRules:GetGameTime() + PICKUP_TIME
+			end})
+
+		self:CreateTimer("xp_gain", {
+			endTime = GameRules:GetGameTime(),
+			useGameTime = true,
+			callback = function(cott, args)
+				for k, v in pairs(self.vPlayers) do
+					if v.hero and v.hero:IsRealHero() then
+						v.hero:AddExperience(10, false)
+					end
+				end
+				return GameRules:GetGameTime() + 1.0
+			end})
 	end
 end
 
@@ -388,9 +443,6 @@ local hook = nil
 local attach = 0
 local controlPoints = {}
 local particleEffect = ""
-
-function ClashGameMode:PlayerSay(keys)	
-end
 
 function ClashGameMode:AutoAssignPlayer(keys)
 	ClashGameMode:CaptureGameMode()
@@ -471,10 +523,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					souls = 0,
 					lastAttacker = -1,
 					regen = false,
-					nearPot = false,
 					prevHP = nil,
-					healEvent = false,
 					negationDisabled = false,
+					totemMultiplier = 1,
+					totemParticle = nil,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -505,246 +557,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 	end
 })
 
-	self:CreateTimer("pot_think", {
-		endTime = GameRules:GetGameTime(),
-		useGameTime = true,
-		callback = function(cott, args)
-			for k, v in pairs(self.vPlayers) do
-				local hero = v.hero
-				local pot = Entities:FindByNameNearest("pot_point", hero:GetCenter(), 320)
-				if pot and hero then
-
-					v.nearPot = true
-
-					local oldSouls = v.souls
-					local oldHealth = hero:GetHealth()
-					local oldMana = hero:GetMana()
-					self:SetNewSouls(hero, 0)
-					local soulDiff = v.souls - oldSouls
-
-					--Heal the hero.
-					if hero:IsAlive() and oldSouls > 0 then
-						hero:SetHealth(oldHealth + -soulDiff * hero:GetMaxHealth() * 0.04)
-						hero:SetMana(oldMana + -soulDiff * hero:GetMaxMana() * 0.04)
-						v.negationDisabled = true
-					end
-
-					--Set team score based on team of hero
-					local oldRadiantScore = self.nRadiantScore
-					local oldDireScore = self.nDireScore
-
-					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-						self.nRadiantScore = self.nRadiantScore + -soulDiff
-					elseif hero:GetTeam() == DOTA_TEAM_BADGUYS then
-						self.nDireScore = self.nDireScore + -soulDiff
-					end
-
-					GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantScore)
-					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
-
-					if oldRadiantScore ~= self.nRadiantScore then
-						for k, v in pairs(self.statuesRadiant) do
-							local statueNo = math.ceil(self.nRadiantScore/(POINTS_TO_WIN/10))
-							if statueNo < 1 then
-								statueNo = 1
-							end
-							if statueNo > 10 then
-								statueNo = 10
-							end
-							local oldModel = self.statuesRadiant[k]:GetModelName()
-							self.invisibleTinyRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
-							self.statuesRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
-							self.statuesRadiant[k]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
-							self.statuesRadiant[k]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
-							self.statuesRadiant[k]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
-							if oldModel ~= self.statuesRadiant[k]:GetModelName() then
-								self.statuesRadiant[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
-
-								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyRadiant[k])
-								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyRadiant[k]:GetAbsOrigin())
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-						end
-					end
-
-					if oldDireScore ~= self.nDireScore then
-						for k, v in pairs(self.statuesDire) do
-							local statueNo = math.ceil(self.nDireScore/(POINTS_TO_WIN/10))
-							if statueNo < 1 then
-								statueNo = 1
-							end
-							if statueNo > 10 then
-								statueNo = 10
-							end
-							local oldModel = self.statuesDire[k]:GetModelName()
-							self.invisibleTinyDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
-							self.statuesDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
-							self.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
-							self.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
-							self.statuesDire[k]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)
-							if oldModel ~= self.statuesDire[k]:GetModelName() then
-								self.statuesDire[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
-
-								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyDire[k])
-								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyDire[k]:GetAbsOrigin())
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-						end
-					end
-
-					--Make a particle for the soul siphon effect.
-					if oldSouls ~= v.souls then
-						local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_slark/slark_essence_shift_hit_spill_streak.vpcf", PATTACH_RENDERORIGIN_FOLLOW, hero)
-						ParticleManager:SetParticleControl(particle, 1, pot:GetCenter())
-						ParticleManager:SetParticleControl(particle, 2, hero:GetCenter())
-						ParticleManager:ReleaseParticleIndex(particle)
-					end
-				elseif not pot then
-					--Resume soul burn once the hero leaves the pot area.
-					v.nearPot = false
-				end
-
-				if self.nRadiantScore >= POINTS_TO_WIN and self.radiantWon == false then
-					self.radiantWon = true
-					for k, v in pairs(self.vPlayers) do
-						if self.statuesRadiant[1] and self.invisibleTinyRadiant[1] then
-							PlayerResource:SetCameraTarget(k, self.statuesRadiant[1])
-							local visionProvider = CreateUnitByName("npc_dota_units_base", self.statuesRadiant[1]:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
-							visionProvider:SetModelScale(1.0)
-							visionProvider:SetHullRadius(0)
-							visionProvider:AddAbility("cott_spot_ability")
-							visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-							visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
-							ScreenShake(self.statuesRadiant[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
-							self.statuesRadiant[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
-						end
-					end
-
-					if self.statuesRadiant[1] and self.invisibleTinyRadiant[1] then
-						self:CreateTimer("radiant_statue_explode_1", {
-							endTime = Time() + 4.5,
-							useGameTime = false,
-							callback = function(cott, args)
-								self.statuesRadiant[1]:SetModel("models/lina_statue/lina_statue_000011.vmdl")
-								self.statuesRadiant[1]:SetRenderColor(255, 62, 62)
-							end})
-						self:CreateTimer("radiant_statue_explode_2", {
-							endTime = Time() + 5.0,
-							useGameTime = false,
-							callback = function(cott, args)
-								self.statuesRadiant[1]:AddNoDraw()
-								self.statuesRadiant[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
-
-								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyRadiant[1])
-								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyRadiant[1]:GetOrigin())
-								ParticleManager:ReleaseParticleIndex(particle)
-
-								GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
-							end})
-					end
-
-				elseif self.nDireScore >= POINTS_TO_WIN and self.direWon == false then
-					self.direWon = true
-					for k, v in pairs(self.vPlayers) do
-						if self.statuesDire[1] and self.invisibleTinyDire[1] then
-							PlayerResource:SetCameraTarget(k, self.statuesDire[1])
-							local visionProvider = CreateUnitByName("npc_dota_units_base", self.statuesDire[1]:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
-							visionProvider:SetModelScale(1.0)
-							visionProvider:SetHullRadius(0)
-							visionProvider:AddAbility("cott_spot_ability")
-							visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-							visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
-							ScreenShake(self.statuesDire[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
-							self.statuesDire[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
-						end
-					end
-
-					if self.statuesDire[1] and self.invisibleTinyDire[1] then
-						self:CreateTimer("dire_statue_explode_1", {
-							endTime = Time() + 4.5,
-							useGameTime = false,
-							callback = function(cott, args)
-								self.statuesDire[1]:SetModel("models/qop_statue/qop_statue_000011.vmdl")
-								self.statuesDire[1]:SetRenderColor(62, 62, 255)
-							end})
-						self:CreateTimer("dire_statue_explode_2", {
-							endTime = Time() + 5.0,
-							useGameTime = false,
-							callback = function(cott, args)
-								self.statuesDire[1]:AddNoDraw()
-								self.statuesDire[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
-
-								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyDire[1])
-								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyDire[1]:GetOrigin())
-								ParticleManager:ReleaseParticleIndex(particle)
-
-								GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
-							end})
-					end
-				end
-
-			end
-			return GameRules:GetGameTime() + 0.2
-		end})
-
-	self:CreateTimer("start_soul_add", {
-		endTime = Time(),
-		useGameTime = false,
-		callback = function(cott, args)
-			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
-				self:CreateTimer("soul_add", {
-					endTime = GameRules:GetGameTime() + SOUL_TIME,
-					useGameTime = true,
-					callback = function(cott, args)
-						for k, v in pairs(self.vPlayers) do
-							local hero = v.hero
-
-							--Add a soul periodically.
-							if hero then
-								self:SetNewSouls(hero, v.souls + 1)
-							end
-						end
-
-						return GameRules:GetGameTime() + SOUL_TIME
-					end})
-				return
-			end
-			return Time() + 0.1
-		end})
-
-	self:CreateTimer("start_pickup_spawn", {
-		endTime = Time(),
-		useGameTime = false,
-		callback = function(cott, args)
-			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
-				self:CreateTimer("pickup_spawn", {
-					endTime = GameRules:GetGameTime() + PICKUP_TIME,
-					useGameTime = true,
-					callback = function(cott, args)
-						local keys = {}
-						local i = 1
-						for k, v in pairs(self.pickupSpots) do
-							keys[i] = k
-							i = i + 1
-						end
-						if not self.pickups[1] then
-							v = self.pickupSpots[keys[RandomInt(1, #keys)]]
-							local pickup = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
-							pickup:SetOriginalModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-							pickup:SetModel("models/items/juggernaut/ward/healing_gills_of_the_lost_isles/healing_gills_of_the_lost_isles.vmdl")
-							pickup:SetModelScale(1.5)
-							pickup:SetHullRadius(0)
-							pickup:AddAbility("cott_pot_ability")
-							pickup:FindAbilityByName('cott_pot_ability'):SetLevel(1)
-							self.pickups[1] = pickup
-						end
-						return GameRules:GetGameTime() + PICKUP_TIME
-					end})
-				return
-			end
-			return Time() + 0.1
-		end})
-
 	self:CreateTimer("pickup_think", {
 		endTime = GameRules:GetGameTime(),
 		useGameTime = true,
@@ -752,24 +564,37 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			for k, v in pairs(self.pickups) do
 				if self.pickups[k] ~= nil then
 					local hero = Entities:FindByClassnameWithin(nil, "npc_dota_hero*", self.pickups[k]:GetCenter(), 200)
+					local playerTable = nil
+					if hero and hero:IsRealHero() then
+						playerTable = self.vPlayers[hero:GetPlayerID()]
+					end
 					local heroFound = false
-					while hero do
+					while hero and not heroFound do
 						if hero:IsRealHero() then
-							local playerTable = self.vPlayers[hero:GetPlayerID()]
-
-							self:SetNewSouls(hero, playerTable.souls + 4)
-
-							if hero:IsAlive() then
-								--playerTable.regen = true
+							if hero:IsAlive() and playerTable.totemMultiplier <= 1 then
 								heroFound = true
 							end
 						end
-						
 						hero = Entities:FindByClassnameWithin(hero, "npc_dota_hero*", self.pickups[k]:GetCenter(), 200)
 					end
 					if heroFound then
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
+
+						--Steal the totem multiplier bonus from whoever has it.
+						for k, v in pairs(self.vPlayers) do
+							if v ~= playerTable then
+								v.totemMultiplier = 1
+								if v.totemParticle then
+									ParticleManager:DestroyParticle(v.totemParticle, true)
+									v.totemParticle = nil
+								end
+							end
+						end
+
+						playerTable.totemMultiplier = 2
+						playerTable.totemParticle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, playerTable.hero)
+						ParticleManager:SetParticleControl(playerTable.totemParticle, 0, playerTable.hero:GetCenter())
 					end
 				end
 			end
@@ -777,84 +602,14 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			return GameRules:GetGameTime() + 0.1
 		end})
 
-	--[[self:CreateTimer("soul_burn_and_regen", {
-		endTime = GameRules:GetGameTime() + 1.0,
-		useGameTime = true,
-		callback = function(cott, args)
-			for k, v in pairs(self.vPlayers) do
-				local hero = v.hero
-				if hero and hero:IsAlive() then
-					--Damage the hero based on their souls, unless they're regenerating HP from a totem.
-					if not v.regen and not v.nearPot then
-						hero:SetHealth(math.max(hero:GetHealth() - math.floor(hero:GetMaxHealth() * math.min(v.souls * .0006, .036)), 1))
-					elseif v.regen then
-						hero:SetHealth(hero:GetHealth() + math.ceil(hero:GetMaxHealth() * .0666))
-						hero:SetMana(hero:GetMana() + math.ceil(hero:GetMaxMana() * .0666))
-					end
-				end
-			end
-			return GameRules:GetGameTime() + 1.0
-		end})]]
-
-	self:CreateTimer("pot_particles", {
-		endTime = Time(),
-		useGameTime = false,
-		callback = function(cott, args)
-			for k, v in pairs(self.soulPots) do
-				local pot = v
-				if pot then
-					local particle = ParticleManager:CreateParticle("particles/world_environmental_fx/bluelamp_flame_torch.vpcf", PATTACH_RENDERORIGIN_FOLLOW, pot)
-					ParticleManager:SetParticleControl(particle, 0, Vector(0,0,0))
-					ParticleManager:ReleaseParticleIndex(particle)
-				end
-			end
-		end})
-
-	--[[self:CreateTimer("healer_think", {
-		endTime = GameRules:GetGameTime(),
-		useGameTime = true,
-		callback = function(cott, args)
-			for k, v in pairs(self.vPlayers) do
-				local hero = v.hero
-				local healer = nil
-				if hero and hero:IsRealHero() then
-					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-						healer = Entities:FindByNameNearest("healer_radiant", hero:GetCenter(), 350)
-					end
-					if hero:GetTeam() == DOTA_TEAM_BADGUYS then
-						healer = Entities:FindByNameNearest("healer_dire", hero:GetCenter(), 350)
-					end
-					if healer then
-						--Heal the hero and restore their mana.
-						if hero:IsAlive() then
-							hero:SetHealth(hero:GetHealth() + 25)
-							hero:SetMana(hero:GetMana() + math.ceil(hero:GetMaxMana() * .0666))
-						end
-					end
-				end
-			end
-			return GameRules:GetGameTime() + 1.0
-		end})
-
-	self:CreateTimer("healer_particles", {
-		endTime = Time(),
-		useGameTime = false,
-		callback = function(cott, args)
-			for k, v in pairs(self.basesRadiant) do
-				local healer = v
-				if healer then
-					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_witchdoctor/witchdoctor_voodoo_restoration_heal_radiant.vpcf", PATTACH_OVERHEAD_FOLLOW, healer)
-					ParticleManager:ReleaseParticleIndex(particle)
-				end
-			end
-			for k, v in pairs(self.basesDire) do
-				local healer = v
-				if healer then
-					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_witchdoctor/witchdoctor_voodoo_restoration_heal.vpcf", PATTACH_OVERHEAD_FOLLOW, healer)
-					ParticleManager:ReleaseParticleIndex(particle)
-				end
-			end
-		end})]]
+	for k, v in pairs(self.soulPots) do
+		local pot = v
+		if pot then
+			local particle = ParticleManager:CreateParticle("particles/world_environmental_fx/bluelamp_flame_torch.vpcf", PATTACH_RENDERORIGIN_FOLLOW, pot)
+			ParticleManager:SetParticleControl(particle, 0, Vector(0,0,0))
+			ParticleManager:ReleaseParticleIndex(particle)
+		end
+	end
 
 	self:CreateTimer("heal_negate", {
 		endTime = GameRules:GetGameTime(),
@@ -868,9 +623,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 and v.negationDisabled == false then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.min(v.souls * 0.025, 0.75)))
+						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.max(math.min(v.souls * 0.025, 0.75), 0)))
 					end
-					v.healEvent = false
 				end
 				if v.negationDisabled == true then
 					v.negationDisabled = false
@@ -880,180 +634,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 			end
 			return GameRules:GetGameTime() + 0.1
 		end})
-
-	self:CreateTimer("eater_think", {
-		endTime = GameRules:GetGameTime(),
-		useGameTime = true,
-		callback = function(cott, args)
-			for k, v in pairs(self.eatersRadiant) do
-				if self.eatersRadiant[k] ~= nil then
-					local creep = Entities:FindByClassnameNearest("npc_dota_creep_lane", self.eaterPointsRadiant[k]:GetCenter(), 96)
-					if creep then
-						if creep:GetTeam() == DOTA_TEAM_BADGUYS then
-							self.nDireCreeps = self.nDireCreeps + 1
-							
-							local slots = 0
-							if math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 100) > 0 then
-								slots = 3
-							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 10) > 0 then
-								slots = 2
-							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 1) > 0 then
-								slots = 1
-							end
-
-							if slots > 0 then
-								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersRadiant[k])
-								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nDireCreeps, 0))
-								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
-								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-
-							if self.nDireCreeps >= CREEPS_PER_SOUL then
-								for k, v in pairs(self.vPlayers) do
-									if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
-										self:SetNewSouls(v.hero, v.souls + 1)
-									end
-								end
-								self.nDireCreeps = 0
-							end
-							UTIL_RemoveImmediate(creep)
-						end
-					end
-
-					local creep = Entities:FindByClassnameNearest("npc_dota_creep_siege", self.eaterPointsRadiant[k]:GetCenter(), 96)
-					if creep then
-						if creep:GetTeam() == DOTA_TEAM_BADGUYS then
-							self.nDireCreeps = self.nDireCreeps + 1
-
-							local slots = 0
-							if math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 100) > 0 then
-								slots = 3
-							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 10) > 0 then
-								slots = 2
-							elseif math.floor((CREEPS_PER_SOUL - self.nDireCreeps) / 1) > 0 then
-								slots = 1
-							end
-
-							if slots > 0 then
-								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersRadiant[k])
-								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nDireCreeps, 0))
-								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
-								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-
-							if self.nDireCreeps >= CREEPS_PER_SOUL then
-								for k, v in pairs(self.vPlayers) do
-									if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
-										self:SetNewSouls(v.hero, v.souls + 1)
-									end
-								end
-								self.nDireCreeps = 0
-							end
-							UTIL_RemoveImmediate(creep)
-						end
-					end
-				end
-			end
-
-			for k, v in pairs(self.eatersDire) do
-				if self.eatersDire[k] ~= nil then
-					local creep = Entities:FindByClassnameNearest("npc_dota_creep_lane", self.eaterPointsDire[k]:GetCenter(), 96)
-					if creep then
-						if creep:GetTeam() == DOTA_TEAM_GOODGUYS then
-							self.nRadiantCreeps = self.nRadiantCreeps + 1
-
-							local slots = 0
-							if math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 100) > 0 then
-								slots = 3
-							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 10) > 0 then
-								slots = 2
-							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 1) > 0 then
-								slots = 1
-							end
-
-							if slots > 0 then
-								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersDire[k])
-								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nRadiantCreeps, 0))
-								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
-								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-
-
-							if self.nRadiantCreeps >= CREEPS_PER_SOUL then
-								for k, v in pairs(self.vPlayers) do
-									if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-										self:SetNewSouls(v.hero, v.souls + 1)
-									end
-								end
-								self.nRadiantCreeps = 0
-							end
-							UTIL_RemoveImmediate(creep)
-						end
-					end
-
-					local creep = Entities:FindByClassnameNearest("npc_dota_creep_siege", self.eaterPointsDire[k]:GetCenter(), 96)
-					if creep then
-						if creep:GetTeam() == DOTA_TEAM_GOODGUYS then
-							self.nRadiantCreeps = self.nRadiantCreeps + 1
-
-							local slots = 0
-							if math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 100) > 0 then
-								slots = 3
-							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 10) > 0 then
-								slots = 2
-							elseif math.floor((CREEPS_PER_SOUL - self.nRadiantCreeps) / 1) > 0 then
-								slots = 1
-							end
-
-							if slots > 0 then
-								local particle = ParticleManager:CreateParticle("particles/msg_fx/msg_xp.vpcf", PATTACH_OVERHEAD_FOLLOW, self.eatersDire[k])
-								ParticleManager:SetParticleControl(particle, 1, Vector(0, CREEPS_PER_SOUL - self.nRadiantCreeps, 0))
-								ParticleManager:SetParticleControl(particle, 2, Vector(2.0, slots, 2))
-								ParticleManager:SetParticleControl(particle, 3, Vector(200, 128, 0))
-								ParticleManager:ReleaseParticleIndex(particle)
-							end
-
-							if self.nRadiantCreeps >= CREEPS_PER_SOUL then
-								for k, v in pairs(self.vPlayers) do
-									if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-										self:SetNewSouls(v.hero, v.souls + 1)
-									end
-								end
-								self.nRadiantCreeps = 0
-							end
-							UTIL_RemoveImmediate(creep)
-						end
-					end
-				end
-			end
-
-			return GameRules:GetGameTime() + 0.1
-		end})
-
-		self:CreateTimer("start_xp_gain", {
-		endTime = Time(),
-		useGameTime = false,
-		callback = function(cott, args)
-			if GameRules:State_Get() >= DOTA_GAMERULES_STATE_GAME_IN_PROGRESS then
-				self:CreateTimer("xp_gain", {
-					endTime = GameRules:GetGameTime(),
-					useGameTime = true,
-					callback = function(cott, args)
-						for k, v in pairs(self.vPlayers) do
-							if v.hero and v.hero:IsRealHero() then
-								v.hero:AddExperience(10, false)
-							end
-						end
-						return GameRules:GetGameTime() + 1.0
-					end})
-				return
-			end
-			return Time() + 0.1
-		end})
-
 end
 
 function ClashGameMode:LoopOverPlayers(callback)
@@ -1278,14 +858,15 @@ function ClashGameMode:OnEntityKilled( keys )
 			callback = function(cott, args)
 				if not killedUnit:IsAlive() then
 					killedUnit:RespawnHero(false, false, false)
+					self.vPlayers[killedUnit:GetPlayerID()].negationDisabled = true
 				end
 			end})
 	
 		local killedTable = self.vPlayers[killedUnit:GetPlayerID()]
 		local oldVictimSouls = killedTable.souls
 
-		--Lose all souls on death.
-		self:SetNewSouls(killedUnit, 0)
+		--Lose half of souls on death. Reset to zero souls if negative.
+		self:SetNewSouls(killedUnit, math.max(math.floor(killedTable.souls / 2), 0))
 	
 		-- If the killer entity is owned by a player, switch to that player's hero instead.
 		while killerEntity and killerEntity:GetOwnerEntity() do
@@ -1302,8 +883,21 @@ function ClashGameMode:OnEntityKilled( keys )
 
 			local oldKillerSouls = killerTable.souls
 
-			--Steal all the victim's souls.
-			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
+			--Steal half of the victim's souls.
+			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0) * killerTable.totemMultiplier)
+
+			--Steal their totem buff as well if they have one.
+			if killedTable.totemMultiplier > 1 then
+				killerTable.totemMultiplier = killedTable.totemMultiplier
+				killerTable.totemParticle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, killerTable.hero)
+				ParticleManager:SetParticleControl(killerTable.totemParticle, 0, killerTable.hero:GetCenter())
+
+				killedTable.totemMultiplier = 1
+				if killedTable.totemParticle then
+					ParticleManager:DestroyParticle(killedTable.totemParticle, true)
+					killedTable.totemParticle = nil
+				end
+			end
 
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
@@ -1322,7 +916,13 @@ function ClashGameMode:OnEntityKilled( keys )
 			local oldKillerSouls = killerTable.souls
 
 			--Steal all the victim's souls.
-			self:SetNewSouls(killerEntity, killerTable.souls + oldVictimSouls)
+			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0) * killerTable.totemMultiplier)
+
+			--Steal their totem buff as well if they have one.
+			if killedTable.totemMultiplier > 1 then
+				killerTable.totemMultiplier = killedTable.totemMultiplier
+				killedTable.totemMultiplier = 1
+			end
 
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
@@ -1370,7 +970,7 @@ end
 function ClashGameMode:SetNewSouls(hero, souls)
 	local v = self.vPlayers[hero:GetPlayerID()]
 	local oldSouls = v.souls
-	souls = max(souls, 0)
+	souls = max(souls, SOUL_MIN)
 	souls = min(souls, SOUL_MAX)
 	v.souls = souls
 
