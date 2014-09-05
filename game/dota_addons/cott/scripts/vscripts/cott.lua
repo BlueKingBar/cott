@@ -153,6 +153,9 @@ function ClashGameMode:InitGameMode()
 	self.nRadiantScore = 0
 	self.nDireScore = 0
 
+	self.radiantWon = false
+	self.direWon = false
+
 	self.nRadiantCreeps = 0
 	self.nDireCreeps = 0
 
@@ -222,6 +225,7 @@ function ClashGameMode:InitGameMode()
 	--Statues!
 	self.statuePointsRadiant = Entities:FindAllByName("statue_radiant")
 	self.statuesRadiant = {}
+	self.invisibleTinyRadiant = {} -- Create an invisible copy of Tiny so the Grow particles show up right.
 
 	for k, v in pairs(self.statuePointsRadiant) do
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
@@ -231,11 +235,24 @@ function ClashGameMode:InitGameMode()
 		statue:SetHullRadius(64)
 		statue:AddAbility("cott_spot_ability")
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		statue:SetRenderColor(255, 128, 128)
 		self.statuesRadiant[k] = statue
+
+		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
+		tiny:SetModel("models/heroes/tiny_01/tiny_01.vmdl")
+		tiny:SetModelScale(1.62)
+		tiny:SetHullRadius(0)
+		tiny:AddAbility("cott_spot_ability")
+		tiny:FindAbilityByName("cott_spot_ability"):SetLevel(1)
+		tiny:AddNoDraw()
+		self.invisibleTinyRadiant[k] = tiny
 	end
 
 	self.statuePointsDire = Entities:FindAllByName("statue_dire")
 	self.statuesDire = {}
+	self.invisibleTinyDire = {} -- Create an invisible copy of Tiny so the Grow particles show up right.
+
 	for k, v in pairs(self.statuePointsDire) do
 		local statue = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
 		statue:SetOriginalModel("models/qop_statue/qop_statue_000001.vmdl")
@@ -245,7 +262,19 @@ function ClashGameMode:InitGameMode()
 		statue:AddAbility("cott_spot_ability")
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		statue:SetForwardVector(Vector(-1, 0, 0))
+		statue:SetRenderColor(128, 128, 255)
 		self.statuesDire[k] = statue
+
+		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
+		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
+		tiny:SetModel("models/heroes/tiny_01/tiny_01.vmdl")
+		tiny:SetModelScale(1.68)
+		tiny:SetHullRadius(0)
+		tiny:AddAbility("cott_spot_ability")
+		tiny:FindAbilityByName("cott_spot_ability"):SetLevel(1)
+		tiny:SetForwardVector(Vector(-1, 0, 0))
+		tiny:AddNoDraw()
+		self.invisibleTinyDire[k] = tiny
 	end
 
 	--Heal negator. Applies a modifier to all heroes that negates healing as they get larger.
@@ -501,6 +530,9 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					end
 
 					--Set team score based on team of hero
+					local oldRadiantScore = self.nRadiantScore
+					local oldDireScore = self.nDireScore
+
 					if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
 						self.nRadiantScore = self.nRadiantScore + -soulDiff
 					elseif hero:GetTeam() == DOTA_TEAM_BADGUYS then
@@ -510,45 +542,53 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, self.nRadiantScore)
 					GameMode:SetTopBarTeamValue ( DOTA_TEAM_BADGUYS, self.nDireScore)
 
-					for k, v in pairs(self.statuesRadiant) do
-						local statueNo = math.ceil(self.nRadiantScore/(POINTS_TO_WIN/10))
-						if statueNo < 1 then
-							statueNo = 1
-						end
-						if statueNo > 10 then
-							statueNo = 10
-						end
-						local oldModel = self.statuesRadiant[k]:GetModelName()
-						self.statuesRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
-						self.statuesRadiant[k]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
-						self.statuesRadiant[k]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
-						if oldModel ~= self.statuesRadiant[k]:GetModelName() then
-							self.statuesRadiant[k]:EmitSoundParams("Tiny.Grow", 100, 1.0, 0.0)
+					if oldRadiantScore ~= self.nRadiantScore then
+						for k, v in pairs(self.statuesRadiant) do
+							local statueNo = math.ceil(self.nRadiantScore/(POINTS_TO_WIN/10))
+							if statueNo < 1 then
+								statueNo = 1
+							end
+							if statueNo > 10 then
+								statueNo = 10
+							end
+							local oldModel = self.statuesRadiant[k]:GetModelName()
+							self.invisibleTinyRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+							self.statuesRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+							self.statuesRadiant[k]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
+							self.statuesRadiant[k]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
+							self.statuesRadiant[k]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
+							if oldModel ~= self.statuesRadiant[k]:GetModelName() then
+								self.statuesRadiant[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
 
-							local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_RENDERORIGIN_FOLLOW, self.statuesRadiant[k])
-							ParticleManager:SetParticleControl(particle, 0, self.statuesRadiant[k]:GetAbsOrigin())
-							ParticleManager:ReleaseParticleIndex(particle)
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyRadiant[k])
+								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyRadiant[k]:GetAbsOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
 						end
 					end
 
-					for k, v in pairs(self.statuesDire) do
-						local statueNo = math.ceil(self.nDireScore/(POINTS_TO_WIN/10))
-						if statueNo < 1 then
-							statueNo = 1
-						end
-						if statueNo > 10 then
-							statueNo = 10
-						end
-						local oldModel = self.statuesDire[k]:GetModelName()
-						self.statuesDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
-						self.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
-						self.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
-						if oldModel ~= self.statuesDire[k]:GetModelName() then
-							self.statuesDire[k]:EmitSoundParams("Tiny.Grow", 100, 1.0, 0.0)
+					if oldDireScore ~= self.nDireScore then
+						for k, v in pairs(self.statuesDire) do
+							local statueNo = math.ceil(self.nDireScore/(POINTS_TO_WIN/10))
+							if statueNo < 1 then
+								statueNo = 1
+							end
+							if statueNo > 10 then
+								statueNo = 10
+							end
+							local oldModel = self.statuesDire[k]:GetModelName()
+							self.invisibleTinyDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+							self.statuesDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+							self.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+							self.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+							self.statuesDire[k]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)
+							if oldModel ~= self.statuesDire[k]:GetModelName() then
+								self.statuesDire[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
 
-							local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_RENDERORIGIN_FOLLOW, self.statuesDire[k])
-							ParticleManager:SetParticleControl(particle, 0, self.statuesDire[k]:GetAbsOrigin())
-							ParticleManager:ReleaseParticleIndex(particle)
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyDire[k])
+								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyDire[k]:GetAbsOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+							end
 						end
 					end
 
@@ -564,10 +604,83 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					v.nearPot = false
 				end
 
-				if self.nRadiantScore >= POINTS_TO_WIN then
-					GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
-				elseif self.nDireScore >= POINTS_TO_WIN then
-					GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
+				if self.nRadiantScore >= POINTS_TO_WIN and self.radiantWon == false then
+					self.radiantWon = true
+					for k, v in pairs(self.vPlayers) do
+						if self.statuesRadiant[1] and self.invisibleTinyRadiant[1] then
+							PlayerResource:SetCameraTarget(k, self.statuesRadiant[1])
+							local visionProvider = CreateUnitByName("npc_dota_units_base", self.statuesRadiant[1]:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
+							visionProvider:SetModelScale(1.0)
+							visionProvider:SetHullRadius(0)
+							visionProvider:AddAbility("cott_spot_ability")
+							visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+							visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
+							ScreenShake(self.statuesRadiant[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
+							self.statuesRadiant[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
+						end
+					end
+
+					if self.statuesRadiant[1] and self.invisibleTinyRadiant[1] then
+						self:CreateTimer("radiant_statue_explode_1", {
+							endTime = Time() + 4.5,
+							useGameTime = false,
+							callback = function(cott, args)
+								self.statuesRadiant[1]:SetModel("models/lina_statue/lina_statue_000011.vmdl")
+								self.statuesRadiant[1]:SetRenderColor(255, 62, 62)
+							end})
+						self:CreateTimer("radiant_statue_explode_2", {
+							endTime = Time() + 5.0,
+							useGameTime = false,
+							callback = function(cott, args)
+								self.statuesRadiant[1]:AddNoDraw()
+								self.statuesRadiant[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
+
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyRadiant[1])
+								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyRadiant[1]:GetOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+
+								GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
+							end})
+					end
+
+				elseif self.nDireScore >= POINTS_TO_WIN and self.direWon == false then
+					self.direWon = true
+					for k, v in pairs(self.vPlayers) do
+						if self.statuesDire[1] and self.invisibleTinyDire[1] then
+							PlayerResource:SetCameraTarget(k, self.statuesDire[1])
+							local visionProvider = CreateUnitByName("npc_dota_units_base", self.statuesDire[1]:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
+							visionProvider:SetModelScale(1.0)
+							visionProvider:SetHullRadius(0)
+							visionProvider:AddAbility("cott_spot_ability")
+							visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+							visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
+							ScreenShake(self.statuesDire[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
+							self.statuesDire[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
+						end
+					end
+
+					if self.statuesDire[1] and self.invisibleTinyDire[1] then
+						self:CreateTimer("dire_statue_explode_1", {
+							endTime = Time() + 4.5,
+							useGameTime = false,
+							callback = function(cott, args)
+								self.statuesDire[1]:SetModel("models/qop_statue/qop_statue_000011.vmdl")
+								self.statuesDire[1]:SetRenderColor(62, 62, 255)
+							end})
+						self:CreateTimer("dire_statue_explode_2", {
+							endTime = Time() + 5.0,
+							useGameTime = false,
+							callback = function(cott, args)
+								self.statuesDire[1]:AddNoDraw()
+								self.statuesDire[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
+
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, self.invisibleTinyDire[1])
+								ParticleManager:SetParticleControl(particle, 0, self.invisibleTinyDire[1]:GetOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+
+								GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
+							end})
+					end
 				end
 
 			end
