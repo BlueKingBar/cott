@@ -12,9 +12,10 @@ STATS_PER_SOUL = 0.75
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
 SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
 SOUL_MIN = -20
-SOUL_MAX = 999
+SOUL_MAX = 120
 SOUL_SCALE_MAX = 120 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
+MULT_TIME = 30.0 --The player with the totem buff gets +1 multiplier after this many seconds holding it.
 CREEPS_PER_SOUL = 1 --Every player on the enemy team loses a soul if this many creeps are pushed onto their pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
@@ -581,20 +582,48 @@ function ClashGameMode:AutoAssignPlayer(keys)
 						UTIL_RemoveImmediate(v)
 						self.pickups[k] = nil
 
-						--Steal the totem multiplier bonus from whoever has it.
+						--Steal the totem multiplier bonus from the enemy team, or continue the buff on the ally holding it.
+						local buffedAllyFound = false
 						for k, v in pairs(self.vPlayers) do
-							if v ~= playerTable then
+							if v.hero:GetTeamNumber() ~= playerTable.hero:GetTeamNumber() then
 								v.totemMultiplier = 1
 								if v.totemParticle then
 									ParticleManager:DestroyParticle(v.totemParticle, true)
 									v.totemParticle = nil
+									v.hero:EmitSoundParams("Hero_StormSpirit.StaticRemnantExplode", 100, 1.0, 0.0)
 								end
+							elseif v.totemMultiplier > 1 then
+								buffedAllyFound = true
+								v.hero:EmitSoundParams("Hero_StormSpirit.StaticRemnantPlant", 100, 1.0, 0.0)
 							end
 						end
 
-						playerTable.totemMultiplier = 2
-						playerTable.totemParticle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, playerTable.hero)
-						ParticleManager:SetParticleControl(playerTable.totemParticle, 0, playerTable.hero:GetCenter())
+						if buffedAllyFound == false then
+							playerTable.totemMultiplier = 2
+							if not playerTable.totemParticle then
+								playerTable.totemParticle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, playerTable.hero)
+								ParticleManager:SetParticleControl(playerTable.totemParticle, 0, playerTable.hero:GetCenter())
+							end
+							playerTable.hero:EmitSoundParams("Hero_StormSpirit.StaticRemnantPlant", 100, 1.0, 0.0)
+							self:CreateTimer("multiplier_add_"..playerTable.hero:GetPlayerID(), {
+								endTime = GameRules:GetGameTime() + MULT_TIME,
+								useGameTime = true,
+								callback = function(cott, args)
+									for k, v in pairs(self.vPlayers) do
+										local hero = playerTable.hero
+
+										--If the hero is buffed, increase their soul multiplier. Otherwise, stop the timer.
+										if hero then
+											if v.totemMultiplier > 1 then
+												v.totemMultiplier = v.totemMultiplier + 1
+											else
+												return
+											end
+										end
+									end
+									return GameRules:GetGameTime() + MULT_TIME
+								end})
+						end
 					end
 				end
 			end
@@ -884,20 +913,7 @@ function ClashGameMode:OnEntityKilled( keys )
 			local oldKillerSouls = killerTable.souls
 
 			--Steal half of the victim's souls.
-			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0) * killerTable.totemMultiplier)
-
-			--Steal their totem buff as well if they have one.
-			if killedTable.totemMultiplier > 1 then
-				killerTable.totemMultiplier = killedTable.totemMultiplier
-				killerTable.totemParticle = ParticleManager:CreateParticle("particles/units/heroes/hero_leshrac/leshrac_lightning_slow.vpcf", PATTACH_RENDERORIGIN_FOLLOW, killerTable.hero)
-				ParticleManager:SetParticleControl(killerTable.totemParticle, 0, killerTable.hero:GetCenter())
-
-				killedTable.totemMultiplier = 1
-				if killedTable.totemParticle then
-					ParticleManager:DestroyParticle(killedTable.totemParticle, true)
-					killedTable.totemParticle = nil
-				end
-			end
+			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0))
 
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
@@ -916,13 +932,7 @@ function ClashGameMode:OnEntityKilled( keys )
 			local oldKillerSouls = killerTable.souls
 
 			--Steal all the victim's souls.
-			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0) * killerTable.totemMultiplier)
-
-			--Steal their totem buff as well if they have one.
-			if killedTable.totemMultiplier > 1 then
-				killerTable.totemMultiplier = killedTable.totemMultiplier
-				killedTable.totemMultiplier = 1
-			end
+			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0))
 
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
@@ -933,6 +943,13 @@ function ClashGameMode:OnEntityKilled( keys )
 			end
 		end
 
+		--End the totem buff.
+		killedTable.totemMultiplier = 1
+		if killedTable.totemParticle then
+			ParticleManager:DestroyParticle(killedTable.totemParticle, true)
+			killedTable.totemParticle = nil
+			killedTable.hero:EmitSoundParams("Hero_StormSpirit.StaticRemnantExplode", 100, 1.0, 0.0)
+		end
 		killedTable.lastAttacker = -1
 	end
 end
