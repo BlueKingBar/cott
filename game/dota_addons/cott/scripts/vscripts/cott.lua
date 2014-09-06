@@ -860,8 +860,9 @@ end
 
 function ClashGameMode:CheatSetSouls(soulCount)
 	local cmdPlayer = Convars:GetCommandClient()
-	if cmdPlayer then
-		local hero = cmdPlayer:GetAssignedHero()
+	local playerID = cmdPlayer:GetPlayerID()
+	if cmdPlayer and ClashGameMode.vPlayers[playerID] then
+		local hero = ClashGameMode.vPlayers[playerID].hero
 		ClashGameMode:SetNewSouls(hero, tonumber(soulCount))
 	end
 end
