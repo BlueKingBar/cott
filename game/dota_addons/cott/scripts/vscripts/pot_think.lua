@@ -94,12 +94,6 @@ function PotThink(trigger)
 		for k, v in pairs(ClashGameMode.vPlayers) do
 			if ClashGameMode.statuesRadiant[1] and ClashGameMode.invisibleTinyRadiant[1] then
 				PlayerResource:SetCameraTarget(k, ClashGameMode.statuesRadiant[1])
-				local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesRadiant[1]:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
-				visionProvider:SetModelScale(1.0)
-				visionProvider:SetHullRadius(0)
-				visionProvider:AddAbility("cott_spot_ability")
-				visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-				visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
 				ScreenShake(ClashGameMode.statuesRadiant[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
 				ClashGameMode.statuesRadiant[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
 			end
@@ -133,12 +127,6 @@ function PotThink(trigger)
 		for k, v in pairs(ClashGameMode.vPlayers) do
 			if ClashGameMode.statuesDire[1] and ClashGameMode.invisibleTinyDire[1] then
 				PlayerResource:SetCameraTarget(k, ClashGameMode.statuesDire[1])
-				local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesDire[1]:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
-				visionProvider:SetModelScale(1.0)
-				visionProvider:SetHullRadius(0)
-				visionProvider:AddAbility("cott_spot_ability")
-				visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
-				visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
 				ScreenShake(ClashGameMode.statuesDire[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
 				ClashGameMode.statuesDire[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
 			end

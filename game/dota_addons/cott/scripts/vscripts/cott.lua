@@ -15,7 +15,6 @@ SOUL_MIN = -20
 SOUL_MAX = 120
 SOUL_SCALE_MAX = 120 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-MULT_TIME = 30.0 --The player with the totem buff gets +1 multiplier after this many seconds holding it.
 CREEPS_PER_SOUL = 1 --Every player on the enemy team loses a soul if this many creeps are pushed onto their pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
@@ -238,6 +237,13 @@ function ClashGameMode:InitGameMode()
 		statue:SetRenderColor(255, 128, 128)
 		self.statuesRadiant[k] = statue
 
+		local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesRadiant[1]:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
+		visionProvider:SetModelScale(1.0)
+		visionProvider:SetHullRadius(0)
+		visionProvider:AddAbility("cott_spot_ability")
+		visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
+
 		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
 		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
 		tiny:SetModel("models/heroes/tiny_01/tiny_01.vmdl")
@@ -264,6 +270,13 @@ function ClashGameMode:InitGameMode()
 		statue:SetForwardVector(Vector(-1, 0, 0))
 		statue:SetRenderColor(128, 128, 255)
 		self.statuesDire[k] = statue
+
+		local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesDire[1]:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
+		visionProvider:SetModelScale(1.0)
+		visionProvider:SetHullRadius(0)
+		visionProvider:AddAbility("cott_spot_ability")
+		visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
 
 		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
 		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
@@ -370,7 +383,10 @@ function ClashGameMode:GameStateChanged(keys)
 
 					--Add a soul periodically.
 					if hero then
-						self:SetNewSouls(hero, v.souls + 1 * v.totemMultiplier)
+						self:SetNewSouls(hero, v.souls + 1 * math.floor(v.totemMultiplier))
+						if v.totemMultiplier > 1 then
+							v.totemMultiplier = v.totemMultiplier + 0.5
+						end
 					end
 				end
 
@@ -605,24 +621,6 @@ function ClashGameMode:AutoAssignPlayer(keys)
 								ParticleManager:SetParticleControl(playerTable.totemParticle, 0, playerTable.hero:GetCenter())
 							end
 							playerTable.hero:EmitSoundParams("Hero_StormSpirit.StaticRemnantPlant", 100, 1.0, 0.0)
-							self:CreateTimer("multiplier_add_"..playerTable.hero:GetPlayerID(), {
-								endTime = GameRules:GetGameTime() + MULT_TIME,
-								useGameTime = true,
-								callback = function(cott, args)
-									for k, v in pairs(self.vPlayers) do
-										local hero = playerTable.hero
-
-										--If the hero is buffed, increase their soul multiplier. Otherwise, stop the timer.
-										if hero then
-											if v.totemMultiplier > 1 then
-												v.totemMultiplier = v.totemMultiplier + 1
-											else
-												return
-											end
-										end
-									end
-									return GameRules:GetGameTime() + MULT_TIME
-								end})
 						end
 					end
 				end
