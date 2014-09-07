@@ -56,7 +56,7 @@ function ClashGameMode:InitGameMode()
 	-- Setup rules
 	GameRules:SetHeroRespawnEnabled( false )
 	GameRules:SetUseUniversalShopMode( true )
-	GameRules:SetSameHeroSelectionEnabled( true )
+	GameRules:SetSameHeroSelectionEnabled( false )
 	GameRules:SetHeroSelectionTime( 60.0 )
 	GameRules:SetPreGameTime( 30.0)
 	GameRules:SetPostGameTime( 60.0 )
