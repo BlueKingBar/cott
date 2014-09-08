@@ -2,6 +2,10 @@ function PotThink(trigger)
 	local hero = trigger.activator
 	local v = ClashGameMode.vPlayers[hero:GetPlayerID()]
 
+	if GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
+		return
+	end
+
 	if hero and hero:IsRealHero() and v.souls > 0 then
 
 		local oldSouls = v.souls
@@ -90,69 +94,14 @@ function PotThink(trigger)
 	end
 
 	if ClashGameMode.nRadiantScore >= POINTS_TO_WIN and ClashGameMode.radiantWon == false then
-		ClashGameMode.radiantWon = true
-		for k, v in pairs(ClashGameMode.vPlayers) do
-			if ClashGameMode.statuesRadiant[1] and ClashGameMode.invisibleTinyRadiant[1] then
-				PlayerResource:SetCameraTarget(k, ClashGameMode.statuesRadiant[1])
-				ScreenShake(ClashGameMode.statuesRadiant[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
-				ClashGameMode.statuesRadiant[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
-			end
-		end
-
 		if ClashGameMode.statuesRadiant[1] and ClashGameMode.invisibleTinyRadiant[1] then
-			ClashGameMode:CreateTimer("radiant_statue_explode_1", {
-				endTime = Time() + 4.5,
-				useGameTime = false,
-				callback = function(cott, args)
-					ClashGameMode.statuesRadiant[1]:SetModel("models/lina_statue/lina_statue_000011.vmdl")
-					ClashGameMode.statuesRadiant[1]:SetRenderColor(255, 62, 62)
-				end})
-			ClashGameMode:CreateTimer("radiant_statue_explode_2", {
-				endTime = Time() + 5.0,
-				useGameTime = false,
-				callback = function(cott, args)
-					ClashGameMode.statuesRadiant[1]:AddNoDraw()
-					ClashGameMode.statuesRadiant[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
-
-					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyRadiant[1])
-					ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyRadiant[1]:GetOrigin())
-					ParticleManager:ReleaseParticleIndex(particle)
-
-					GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
-				end})
+			ClashGameMode.radiantWon = true
+			GameRules:SetGameWinner(DOTA_TEAM_GOODGUYS)
 		end
-
 	elseif ClashGameMode.nDireScore >= POINTS_TO_WIN and ClashGameMode.direWon == false then
-		ClashGameMode.direWon = true
-		for k, v in pairs(ClashGameMode.vPlayers) do
-			if ClashGameMode.statuesDire[1] and ClashGameMode.invisibleTinyDire[1] then
-				PlayerResource:SetCameraTarget(k, ClashGameMode.statuesDire[1])
-				ScreenShake(ClashGameMode.statuesDire[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
-				ClashGameMode.statuesDire[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
-			end
-		end
-
 		if ClashGameMode.statuesDire[1] and ClashGameMode.invisibleTinyDire[1] then
-			ClashGameMode:CreateTimer("dire_statue_explode_1", {
-				endTime = Time() + 4.5,
-				useGameTime = false,
-				callback = function(cott, args)
-					ClashGameMode.statuesDire[1]:SetModel("models/qop_statue/qop_statue_000011.vmdl")
-					ClashGameMode.statuesDire[1]:SetRenderColor(62, 62, 255)
-				end})
-			ClashGameMode:CreateTimer("dire_statue_explode_2", {
-				endTime = Time() + 5.0,
-				useGameTime = false,
-				callback = function(cott, args)
-					ClashGameMode.statuesDire[1]:AddNoDraw()
-					ClashGameMode.statuesDire[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
-
-					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyDire[1])
-					ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyDire[1]:GetOrigin())
-					ParticleManager:ReleaseParticleIndex(particle)
-
-					GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
-				end})
+			ClashGameMode.direWon = true
+			GameRules:SetGameWinner(DOTA_TEAM_BADGUYS)
 		end
 	end
 

@@ -1,6 +1,6 @@
 print ('[COTT] cott.lua' )
 
-DEBUG=true
+DEBUG=false
 USE_LOBBY=false
 THINK_TIME = 0.1
 
@@ -76,6 +76,7 @@ function ClashGameMode:InitGameMode()
 	ListenToGameEvent('player_connect', Dynamic_Wrap(ClashGameMode, 'PlayerConnect'), self)
 	ListenToGameEvent('game_rules_state_change', Dynamic_Wrap(ClashGameMode, 'GameStateChanged'), self)
 	ListenToGameEvent('npc_spawned', Dynamic_Wrap(ClashGameMode, 'UnitSpawned'), self)
+	ListenToGameEvent('dota_match_done', Dynamic_Wrap(ClashGameMode, 'GameEnd'), self)
 
 	Convars:RegisterCommand( "command_example", Dynamic_Wrap(ClashGameMode, 'ExampleConsoleCommand'), "A console command example", 0 )
 	Convars:RegisterCommand( "set_souls", Dynamic_Wrap(ClashGameMode, 'CheatSetSouls'), "Sets the number of souls you have.", FCVAR_CHEAT )
@@ -157,6 +158,9 @@ function ClashGameMode:InitGameMode()
 
 	self.nRadiantCreeps = 0
 	self.nDireCreeps = 0
+
+	-- Think stopper
+	self.stopThink = false
 
 	-- Data for soul pots
 	self.soulPotPoints = Entities:FindAllByName("pot_point")
@@ -431,6 +435,135 @@ function ClashGameMode:GameStateChanged(keys)
 				end
 				return GameRules:GetGameTime() + 1.0
 			end})
+
+	elseif GameRules:State_Get() == DOTA_GAMERULES_STATE_POST_GAME then
+		ClashGameMode:RemoveTimers(true)
+		if ClashGameMode.radiantWon == true then
+			local statueNo = math.ceil(ClashGameMode.nRadiantScore/(POINTS_TO_WIN/10))
+			for k, v in pairs(ClashGameMode.vPlayers) do
+				if ClashGameMode.statuesRadiant[1] then
+					PlayerResource:SetCameraTarget(k, ClashGameMode.statuesRadiant[1])
+				end
+			end
+			ClashGameMode:CreateTimer("radiant_statue_swell", {
+				endTime = Time() + 2.0,
+				useGameTime = false,
+				callback = function(cott, args)
+					statueNo = statueNo + 1
+					if statueNo < 1 then
+						statueNo = 1
+					end
+					if statueNo > 10 then
+						statueNo = 10
+						for k, v in pairs(ClashGameMode.vPlayers) do
+							if ClashGameMode.statuesRadiant[1] and ClashGameMode.invisibleTinyRadiant[1] then
+								ScreenShake(ClashGameMode.statuesRadiant[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
+								ClashGameMode.statuesRadiant[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
+							end
+						end
+
+						ClashGameMode:CreateTimer("radiant_statue_explode_1", {
+							endTime = Time() + 4.5,
+							useGameTime = false,
+							callback = function(cott, args)
+								ClashGameMode.statuesRadiant[1]:SetModel("models/lina_statue/lina_statue_000011.vmdl")
+								ClashGameMode.statuesRadiant[1]:SetRenderColor(255, 62, 62)
+							end})
+						ClashGameMode:CreateTimer("radiant_statue_explode_2", {
+							endTime = Time() + 5.0,
+							useGameTime = false,
+							callback = function(cott, args)
+								ClashGameMode.statuesRadiant[1]:AddNoDraw()
+								ClashGameMode.statuesRadiant[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
+
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyRadiant[1])
+								ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyRadiant[1]:GetOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+								ClashGameMode.stopThink = true
+							end})
+
+						return
+					end
+					local oldModel = ClashGameMode.statuesRadiant[1]:GetModelName()
+					ClashGameMode.invisibleTinyRadiant[1]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+					ClashGameMode.statuesRadiant[1]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+					ClashGameMode.statuesRadiant[1]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
+					ClashGameMode.statuesRadiant[1]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
+					ClashGameMode.statuesRadiant[1]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
+					if oldModel ~= ClashGameMode.statuesRadiant[1]:GetModelName() then
+						ClashGameMode.statuesRadiant[1]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
+
+						local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyRadiant[1])
+						ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyRadiant[1]:GetAbsOrigin())
+						ParticleManager:ReleaseParticleIndex(particle)
+					end
+					return Time() + 0.5
+				end})
+
+		elseif ClashGameMode.direWon == true then
+			local statueNo = math.ceil(ClashGameMode.nDireScore/(POINTS_TO_WIN/10))
+			for k, v in pairs(ClashGameMode.vPlayers) do
+				if ClashGameMode.statuesDire[1] then
+					PlayerResource:SetCameraTarget(k, ClashGameMode.statuesDire[1])
+				end
+			end
+			ClashGameMode:CreateTimer("dire_statue_swell", {
+				endTime = Time() + 2.0,
+				useGameTime = false,
+				callback = function(cott, args)
+					statueNo = statueNo + 1
+					if statueNo < 1 then
+						statueNo = 1
+					end
+					if statueNo > 10 then
+						statueNo = 10
+						for k, v in pairs(ClashGameMode.vPlayers) do
+							if ClashGameMode.statuesDire[1] and ClashGameMode.invisibleTinyDire[1] then
+								ScreenShake(ClashGameMode.statuesDire[1]:GetCenter(), 10.0, 10.0, 9.0, 99999, 0, true)
+								ClashGameMode.statuesDire[1]:EmitSoundParams("Ability.Avalanche", 50, 1.0, 0.0)
+							end
+						end
+
+						ClashGameMode:CreateTimer("dire_statue_explode_1", {
+							endTime = Time() + 4.5,
+							useGameTime = false,
+							callback = function(cott, args)
+								ClashGameMode.statuesDire[1]:SetModel("models/qop_statue/qop_statue_000011.vmdl")
+								ClashGameMode.statuesDire[1]:SetRenderColor(62, 62, 255)
+							end})
+						ClashGameMode:CreateTimer("dire_statue_explode_2", {
+							endTime = Time() + 5.0,
+							useGameTime = false,
+							callback = function(cott, args)
+								ClashGameMode.statuesDire[1]:AddNoDraw()
+								ClashGameMode.statuesDire[1]:EmitSoundParams("Ability.TossImpact", 80, 1.0, 0.0)
+
+								local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyDire[1])
+								ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyDire[1]:GetOrigin())
+								ParticleManager:ReleaseParticleIndex(particle)
+								ClashGameMode.stopThink = true
+							end})
+
+						return
+					end
+
+					local oldModel = ClashGameMode.statuesDire[1]:GetModelName()
+					ClashGameMode.invisibleTinyDire[1]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+					ClashGameMode.statuesDire[1]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+					ClashGameMode.statuesDire[1]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+					ClashGameMode.statuesDire[1]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
+					ClashGameMode.statuesDire[1]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)
+					if oldModel ~= ClashGameMode.statuesDire[1]:GetModelName() then
+						ClashGameMode.statuesDire[1]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
+
+						local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyDire[1])
+						ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyDire[1]:GetAbsOrigin())
+						ParticleManager:ReleaseParticleIndex(particle)
+					end
+
+					return Time() + 0.5
+				end})
+		end
 	end
 end
 
@@ -711,7 +844,8 @@ function ClashGameMode:Think()
 	print(4)
 	print("---------------")]]
 	-- If the game's over, it's over.
-	if GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
+	if ClashGameMode.stopThink == true then
+		print("[COTT] Game is over! Have a nice day!")
 		return
 	end
 
@@ -980,6 +1114,14 @@ function ClashGameMode:OnEntityHurt( keys )
 		if killerEntity:IsPlayer() then
 			killedTable.lastAttacker = killerEntity:GetPlayerID()
 		end
+	end
+end
+
+function ClashGameMode:GameEnd( keys )
+	if keys.winningteam == DOTA_TEAM_GOODGUYS then
+		self.radiantWon = true
+	elseif keys.winningteam == DOTA_TEAM_BADGUYS then
+		self.direWon = true
 	end
 end
 

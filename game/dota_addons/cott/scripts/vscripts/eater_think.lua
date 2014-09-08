@@ -1,5 +1,10 @@
 function EaterThinkRadiant(trigger)
 	local creep = trigger.activator
+
+	if GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
+		return
+	end
+
 	if creep and creep:IsAlive() then
 		if creep:GetTeam() == DOTA_TEAM_BADGUYS then		
 			local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_obsidian_destroyer/obsidian_death_cloud.vpcf", PATTACH_RENDERORIGIN_FOLLOW, creep)
@@ -24,6 +29,11 @@ end
 
 function EaterThinkDire(trigger)
 	local creep = trigger.activator
+
+	if GameRules:State_Get() >= DOTA_GAMERULES_STATE_POST_GAME then
+		return
+	end
+
 	if creep and creep:IsAlive() then
 		if creep:GetTeam() == DOTA_TEAM_GOODGUYS then		
 			local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_obsidian_destroyer/obsidian_death_cloud.vpcf", PATTACH_RENDERORIGIN_FOLLOW, creep)
