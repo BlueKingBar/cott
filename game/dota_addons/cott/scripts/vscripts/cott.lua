@@ -10,10 +10,10 @@ POINTS_TO_WIN = 400
 RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 0.75
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
-SCALE_PER_SOUL = 0.025 --Scale is a fraction of the hero's default size.
-SOUL_MIN = -20
+SCALE_PER_SOUL = 0.05 --Scale is a fraction of the hero's default size.
+SOUL_MIN = -10
 SOUL_MAX = 120
-SOUL_SCALE_MAX = 120 --Hero stops getting bigger after this many souls.
+SOUL_SCALE_MAX = 60 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
 CREEPS_PER_SOUL = 1 --Every player on the enemy team loses a soul if this many creeps are pushed onto their pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
@@ -371,6 +371,8 @@ function ClashGameMode:UnitSpawned(keys)
 	local hero = EntIndexToHScript(keys.entindex)
 
 	if hero and hero:IsRealHero() then
+		--Increase base HP regen on all heroes.
+		hero:SetBaseHealthRegen(3.0)
 		--Add mana regen modifier to all heroes.
 		self.manaRegenner:CastAbilityOnTarget(hero, self.manaRegenner:FindAbilityByName("cott_mana_regen"), -1)
 	end
@@ -783,7 +785,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 and v.negationDisabled == false then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(hero:GetMaxHealth() * (currHP - HPDiff * math.max(math.min(v.souls * 0.025, 0.75), 0)))
+						hero:SetHealth(math.ceil(hero:GetMaxHealth() * (currHP - HPDiff * math.max(math.min(v.souls * 0.025, 0.75), 0))))
 					end
 				end
 				if v.negationDisabled == true then
