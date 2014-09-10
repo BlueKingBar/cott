@@ -1157,9 +1157,9 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	FireGameEvent( "cott_souls_change", eventTable )
 
 	-- Set attribute change based on the number of souls.
-	local strChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
-	local agiChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
-	local intChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
+	local strChange = (v.oldLevel - 1) * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
+	local agiChange = (v.oldLevel - 1) * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
+	local intChange = (v.oldLevel - 1) * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
 
 	-- Reset stats to base.
 	hero:SetBaseStrength(hero:GetBaseStrength() - oldSouls * strChange)
@@ -1168,9 +1168,9 @@ function ClashGameMode:SetNewSouls(hero, souls)
 
 
 	-- Set stats accordingly.
-	strChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
-	agiChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
-	intChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
+	strChange = (hero:GetLevel() - 1) * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
+	agiChange = (hero:GetLevel() - 1) * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
+	intChange = (hero:GetLevel() - 1) * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
 
 	hero:SetBaseStrength(hero:GetBaseStrength() + souls * strChange)
 	hero:SetBaseAgility(hero:GetBaseAgility() + souls * agiChange)
