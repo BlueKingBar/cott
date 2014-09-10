@@ -8,12 +8,13 @@ STARTING_GOLD = 650 --Non-functional
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
 POINTS_TO_WIN = 400
 RESPAWN_TIME = 6.0
-STATS_PER_SOUL = 0.75
+STATS_PER_SOUL = 0.75 --Not functional. Changed the way stat gains work.
+MAX_STATS_PER_LEVEL = 5 --Make sure this number is higher than the highest stat gain in the game or a hero may lose stats with souls.
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
-SCALE_PER_SOUL = 0.034 --Scale is a fraction of the hero's default size.
+SCALE_PER_SOUL = 0.03 --Scale is a fraction of the hero's default size.
 SOUL_MIN = 0
-SOUL_MAX = 90
-SOUL_SCALE_MAX = 90 --Hero stops getting bigger after this many souls.
+SOUL_MAX = 100
+SOUL_SCALE_MAX = 100 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
@@ -76,6 +77,7 @@ function ClashGameMode:InitGameMode()
 	ListenToGameEvent('game_rules_state_change', Dynamic_Wrap(ClashGameMode, 'GameStateChanged'), self)
 	ListenToGameEvent('npc_spawned', Dynamic_Wrap(ClashGameMode, 'UnitSpawned'), self)
 	ListenToGameEvent('dota_match_done', Dynamic_Wrap(ClashGameMode, 'GameEnd'), self)
+	ListenToGameEvent('dota_player_gained_level', Dynamic_Wrap(ClashGameMode, 'LevelGained'), self)
 
 	Convars:RegisterCommand( "command_example", Dynamic_Wrap(ClashGameMode, 'ExampleConsoleCommand'), "A console command example", 0 )
 	Convars:RegisterCommand( "set_souls", Dynamic_Wrap(ClashGameMode, 'CheatSetSouls'), "Sets the number of souls you have.", FCVAR_CHEAT )
@@ -678,6 +680,7 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					negationDisabled = false,
 					totemMultiplier = 1,
 					totemParticle = nil,
+					oldLevel = 1,
 				}
 				self.vPlayers[playerID] = heroTable
 
@@ -1126,6 +1129,12 @@ function ClashGameMode:GameEnd( keys )
 	end
 end
 
+function ClashGameMode:LevelGained( keys )
+	local p = EntIndexToHScript(keys.player)
+	local v = self.vPlayers[p:GetPlayerID()]
+	self:SetNewSouls(v.hero, v.souls)
+end
+
 function ClashGameMode:SetNewSouls(hero, souls)
 	local v = self.vPlayers[hero:GetPlayerID()]
 	local oldSouls = v.souls
@@ -1147,10 +1156,25 @@ function ClashGameMode:SetNewSouls(hero, souls)
 	}
 	FireGameEvent( "cott_souls_change", eventTable )
 
-	-- Set attribute change based on the number of souls change.
-	hero:SetBaseStrength(hero:GetBaseStrength() + soulDiff * STATS_PER_SOUL)
-	hero:SetBaseAgility(hero:GetBaseAgility() + soulDiff * STATS_PER_SOUL)
-	hero:SetBaseIntellect(hero:GetBaseIntellect() + soulDiff * STATS_PER_SOUL)
+	-- Set attribute change based on the number of souls.
+	local strChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
+	local agiChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
+	local intChange = v.oldLevel * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
+
+	-- Reset stats to base.
+	hero:SetBaseStrength(hero:GetBaseStrength() - oldSouls * strChange)
+	hero:SetBaseAgility(hero:GetBaseAgility() - oldSouls * agiChange)
+	hero:SetBaseIntellect(hero:GetBaseIntellect() - oldSouls * intChange)
+
+
+	-- Set stats accordingly.
+	strChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetStrengthGain()) / SOUL_MAX
+	agiChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetAgilityGain()) / SOUL_MAX
+	intChange = hero:GetLevel() * (MAX_STATS_PER_LEVEL - hero:GetIntellectGain()) / SOUL_MAX
+
+	hero:SetBaseStrength(hero:GetBaseStrength() + souls * strChange)
+	hero:SetBaseAgility(hero:GetBaseAgility() + souls * agiChange)
+	hero:SetBaseIntellect(hero:GetBaseIntellect() + souls * intChange)
 
 	--Set damage change based on the number of souls change.
   --[[local casterLevel = hero:GetLevel()
@@ -1167,6 +1191,9 @@ function ClashGameMode:SetNewSouls(hero, souls)
   local newNewMaxDamage = hero:GetBaseDamageMax()
   hero:SetBaseDamageMin( newNewMinDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))
   hero:SetBaseDamageMax( newNewMaxDamage - (damageDiff - (soulDiff * DMG_PER_SOUL)))]]
+
+  -- Set new "old level".
+  v.oldLevel = hero:GetLevel()
 
 	hero:CalculateStatBonus()
 
