@@ -12,8 +12,8 @@ function EaterThinkRadiant(trigger)
 			ParticleManager:ReleaseParticleIndex(particle)
 			
 			for k, v in pairs(ClashGameMode.vPlayers) do
-				if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
-					ClashGameMode:SetNewSouls(v.hero, v.souls - 1)
+				if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
+					ClashGameMode:SetNewSouls(v.hero, v.souls + 1)
 				end
 			end
 			creep:ForceKill(true)
@@ -41,8 +41,8 @@ function EaterThinkDire(trigger)
 			ParticleManager:ReleaseParticleIndex(particle)
 			
 			for k, v in pairs(ClashGameMode.vPlayers) do
-				if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
-					ClashGameMode:SetNewSouls(v.hero, v.souls - 1)
+				if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
+					ClashGameMode:SetNewSouls(v.hero, v.souls + 1)
 				end
 			end
 			creep:ForceKill(true)

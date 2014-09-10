@@ -10,12 +10,11 @@ POINTS_TO_WIN = 400
 RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 0.75
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
-SCALE_PER_SOUL = 0.05 --Scale is a fraction of the hero's default size.
-SOUL_MIN = -10
-SOUL_MAX = 120
-SOUL_SCALE_MAX = 60 --Hero stops getting bigger after this many souls.
+SCALE_PER_SOUL = 0.034 --Scale is a fraction of the hero's default size.
+SOUL_MIN = 0
+SOUL_MAX = 90
+SOUL_SCALE_MAX = 90 --Hero stops getting bigger after this many souls.
 SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
-CREEPS_PER_SOUL = 1 --Every player on the enemy team loses a soul if this many creeps are pushed onto their pad.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
