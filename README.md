@@ -6,11 +6,9 @@ The D2Ware classic is back with a new twist! Players get souls over time and fro
 
 Details:
 
-- Each soul provides .75 of each attribute (Strength, Agility, Intelligence).
+- Each soul provides attributes. How many depends on your level, and scales harder if your hero lacks in a certain stat. At 100 souls (the maximum), your hero effectively has 5.0 stat gain per level in all 3 stats.
 
 - On death, you lose half of your souls to your killer.
-
-- Souls top out at 90.
 
 - The totem buff increases your soul gain by 1. In addition, this bonus increases it by 1 more every 30 seconds. This resets and is lost if an opponent takes a totem, but persists on the same person if a teammate grabs it. The owner of the buff cannot grab further totems until the buff is lost.
 
