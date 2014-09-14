@@ -27,8 +27,10 @@ function PotThink(trigger)
 
 		if hero:GetTeam() == DOTA_TEAM_GOODGUYS then
 			ClashGameMode.nRadiantScore = ClashGameMode.nRadiantScore + -soulDiff
+			ClashStatTracker:AddSoulsDeposited(hero:GetPlayerID(), -soulDiff)
 		elseif hero:GetTeam() == DOTA_TEAM_BADGUYS then
 			ClashGameMode.nDireScore = ClashGameMode.nDireScore + -soulDiff
+			ClashStatTracker:AddSoulsDeposited(hero:GetPlayerID(), -soulDiff)
 		end
 
 		GameMode:SetTopBarTeamValue ( DOTA_TEAM_GOODGUYS, ClashGameMode.nRadiantScore)
@@ -44,8 +46,8 @@ function PotThink(trigger)
 					statueNo = 10
 				end
 				local oldModel = ClashGameMode.statuesRadiant[k]:GetModelName()
-				ClashGameMode.invisibleTinyRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
-				ClashGameMode.statuesRadiant[k]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+				ClashGameMode.invisibleTinyRadiant[k]:SetModelScale(1.62 + 0.243 * (statueNo - 1))
+				ClashGameMode.statuesRadiant[k]:SetModelScale(1.62 + 0.243 * (statueNo - 1))
 				ClashGameMode.statuesRadiant[k]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
 				ClashGameMode.statuesRadiant[k]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
 				ClashGameMode.statuesRadiant[k]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
@@ -69,8 +71,8 @@ function PotThink(trigger)
 					statueNo = 10
 				end
 				local oldModel = ClashGameMode.statuesDire[k]:GetModelName()
-				ClashGameMode.invisibleTinyDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
-				ClashGameMode.statuesDire[k]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+				ClashGameMode.invisibleTinyDire[k]:SetModelScale(1.68 + 0.252 * (statueNo - 1))
+				ClashGameMode.statuesDire[k]:SetModelScale(1.68 + 0.252 * (statueNo - 1))
 				ClashGameMode.statuesDire[k]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 				ClashGameMode.statuesDire[k]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 				ClashGameMode.statuesDire[k]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)

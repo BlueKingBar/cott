@@ -400,6 +400,8 @@ function ClashGameMode:GameStateChanged(keys)
 					--Add a soul periodically.
 					if hero then
 						self:SetNewSouls(hero, v.souls + 1 * math.floor(v.totemMultiplier))
+						ClashStatTracker:AddPassiveSouls(k, 1)
+						ClashStatTracker:AddTotemSouls(k, max(math.floor(v.totemMultiplier) - 1, 0))
 						if v.totemMultiplier > 1 then
 							v.totemMultiplier = v.totemMultiplier + 0.5
 						end
@@ -497,8 +499,8 @@ function ClashGameMode:GameStateChanged(keys)
 						return
 					end
 					local oldModel = ClashGameMode.statuesRadiant[1]:GetModelName()
-					ClashGameMode.invisibleTinyRadiant[1]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
-					ClashGameMode.statuesRadiant[1]:SetModelScale(1.62 + 0.162 * (statueNo - 1))
+					ClashGameMode.invisibleTinyRadiant[1]:SetModelScale(1.62 + 0.243 * (statueNo - 1))
+					ClashGameMode.statuesRadiant[1]:SetModelScale(1.62 + 0.243 * (statueNo - 1))
 					ClashGameMode.statuesRadiant[1]:SetOriginalModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
 					ClashGameMode.statuesRadiant[1]:SetModel(string.format("models/lina_statue/lina_statue_%06d.vmdl", statueNo))
 					ClashGameMode.statuesRadiant[1]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
@@ -560,8 +562,8 @@ function ClashGameMode:GameStateChanged(keys)
 					end
 
 					local oldModel = ClashGameMode.statuesDire[1]:GetModelName()
-					ClashGameMode.invisibleTinyDire[1]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
-					ClashGameMode.statuesDire[1]:SetModelScale(1.68 + 0.168 * (statueNo - 1))
+					ClashGameMode.invisibleTinyDire[1]:SetModelScale(1.68 + 0.252 * (statueNo - 1))
+					ClashGameMode.statuesDire[1]:SetModelScale(1.68 + 0.252 * (statueNo - 1))
 					ClashGameMode.statuesDire[1]:SetOriginalModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 					ClashGameMode.statuesDire[1]:SetModel(string.format("models/qop_statue/qop_statue_%06d.vmdl", statueNo))
 					ClashGameMode.statuesDire[1]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)
@@ -692,6 +694,8 @@ function ClashGameMode:AutoAssignPlayer(keys)
 					oldLevel = 1,
 				}
 				self.vPlayers[playerID] = heroTable
+
+				ClashStatTracker:AddPlayer(playerID, PlayerResource:GetPlayerName(playerID), heroEntity)
 
 				--Show rules popup.
 				ShowGenericPopupToPlayer(ply, "#rules_title", "#rules_text", "", "", 0)
@@ -1038,7 +1042,8 @@ function ClashGameMode:OnEntityKilled( keys )
 		local killedTable = self.vPlayers[killedUnit:GetPlayerID()]
 		local oldVictimSouls = killedTable.souls
 
-		--Lose half of souls on death. Reset to zero souls if negative.
+		--Lose half of souls on death.
+		ClashStatTracker:AddSoulsLost(killedUnit:GetPlayerID(), math.max(math.ceil(killedTable.souls / 2), 0))
 		self:SetNewSouls(killedUnit, math.max(math.floor(killedTable.souls / 2), 0))
 	
 		-- If the killer entity is owned by a player, switch to that player's hero instead.
@@ -1059,6 +1064,8 @@ function ClashGameMode:OnEntityKilled( keys )
 			--Steal half of the victim's souls.
 			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0))
 
+			ClashStatTracker:AddKillSouls(killerEntity:GetPlayerID(), math.max(math.ceil(oldVictimSouls / 2), 0))
+
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
 			if killerEntity:IsAlive() and victimSoulAdvantage > 0 then
@@ -1077,6 +1084,8 @@ function ClashGameMode:OnEntityKilled( keys )
 
 			--Steal all the victim's souls.
 			self:SetNewSouls(killerEntity, killerTable.souls + math.max(math.ceil(oldVictimSouls / 2), 0))
+
+			ClashStatTracker:AddKillSouls(killerEntity:GetPlayerID(), math.max(math.ceil(oldVictimSouls / 2), 0))
 
 			--Heal the hero if their soul count was lower than their victim's.
 			local victimSoulAdvantage = oldVictimSouls - oldKillerSouls
@@ -1134,6 +1143,7 @@ function ClashGameMode:GameEnd( keys )
 	elseif keys.winningteam == DOTA_TEAM_BADGUYS then
 		self.direWon = true
 	end
+	ClashStatTracker:PrintStats()
 end
 
 function ClashGameMode:LevelGained( keys )

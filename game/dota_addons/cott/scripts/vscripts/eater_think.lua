@@ -14,6 +14,7 @@ function EaterThinkRadiant(trigger)
 			for k, v in pairs(ClashGameMode.vPlayers) do
 				if v.hero and v.hero:GetTeam() == DOTA_TEAM_BADGUYS then
 					ClashGameMode:SetNewSouls(v.hero, v.souls + 1)
+					ClashStatTracker:AddPushSouls(k, 1)
 				end
 			end
 			creep:ForceKill(true)
@@ -43,6 +44,7 @@ function EaterThinkDire(trigger)
 			for k, v in pairs(ClashGameMode.vPlayers) do
 				if v.hero and v.hero:GetTeam() == DOTA_TEAM_GOODGUYS then
 					ClashGameMode:SetNewSouls(v.hero, v.souls + 1)
+					ClashStatTracker:AddPushSouls(k, 1)
 				end
 			end
 			creep:ForceKill(true)

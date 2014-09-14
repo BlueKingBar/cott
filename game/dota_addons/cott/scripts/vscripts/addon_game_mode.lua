@@ -3,6 +3,7 @@
 require('util')
 --require('physics')
 require('multiteam')
+require('stat_tracker')
 require('cott')
 
 --[[if ReflexGameMode == nil then
