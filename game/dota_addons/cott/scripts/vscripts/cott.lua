@@ -239,7 +239,10 @@ function ClashGameMode:InitGameMode()
 		statue:SetHullRadius(64)
 		statue:AddAbility("cott_spot_ability")
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
+		statue:SetForwardVector(Vector(1, 0, 0))
 		statue:SetRenderColor(255, 128, 128)
+		statue:SetDayTimeVisionRange(1800)
+		statue:SetNightTimeVisionRange(1800)
 		self.statuesRadiant[k] = statue
 
 		local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesRadiant[1]:GetCenter(), false, nil, nil, DOTA_TEAM_BADGUYS)
@@ -248,6 +251,8 @@ function ClashGameMode:InitGameMode()
 		visionProvider:AddAbility("cott_spot_ability")
 		visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
+		visionProvider:SetDayTimeVisionRange(100)
+		visionProvider:SetNightTimeVisionRange(100)
 
 		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
 		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
@@ -274,6 +279,8 @@ function ClashGameMode:InitGameMode()
 		statue:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		statue:SetForwardVector(Vector(-1, 0, 0))
 		statue:SetRenderColor(128, 128, 255)
+		statue:SetDayTimeVisionRange(1800)
+		statue:SetNightTimeVisionRange(1800)
 		self.statuesDire[k] = statue
 
 		local visionProvider = CreateUnitByName("npc_dota_units_base", ClashGameMode.statuesDire[1]:GetCenter(), false, nil, nil, DOTA_TEAM_GOODGUYS)
@@ -282,6 +289,8 @@ function ClashGameMode:InitGameMode()
 		visionProvider:AddAbility("cott_spot_ability")
 		visionProvider:FindAbilityByName('cott_spot_ability'):SetLevel(1)
 		visionProvider:AddNewModifier(visionProvider, nil, "modifier_phased", {})
+		visionProvider:SetDayTimeVisionRange(100)
+		visionProvider:SetNightTimeVisionRange(100)
 
 		local tiny = CreateUnitByName("npc_dota_units_base", v:GetCenter(), false, nil, nil, DOTA_TEAM_NEUTRALS)
 		tiny:SetOriginalModel("models/heroes/tiny_01/tiny_01.vmdl")
@@ -373,7 +382,7 @@ function ClashGameMode:UnitSpawned(keys)
 
 	if hero and hero:IsRealHero() then
 		--Increase base HP regen on all heroes.
-		hero:SetBaseHealthRegen(3.0)
+		hero:SetBaseHealthRegen(5.0)
 		--Add mana regen modifier to all heroes.
 		self.manaRegenner:CastAbilityOnTarget(hero, self.manaRegenner:FindAbilityByName("cott_mana_regen"), -1)
 	end
@@ -787,12 +796,10 @@ function ClashGameMode:AutoAssignPlayer(keys)
 				if prevHP and (currHP - prevHP) > 0 and v.negationDisabled == false then
 					local HPDiff = currHP - prevHP
 					if hero:IsAlive() then
-						hero:SetHealth(math.ceil(hero:GetMaxHealth() * (currHP - HPDiff * math.max(math.min(v.souls * 0.025, 0.75), 0))))
+						hero:SetHealth(math.ceil(hero:GetMaxHealth() * (currHP - HPDiff * math.max(math.min(v.souls * 0.025, 1.00), 0))))
 					end
 				end
-				if v.negationDisabled == true then
-					v.negationDisabled = false
-				end
+				v.negationDisabled = false
 
 				v.prevHP = currHP
 			end

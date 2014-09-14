@@ -80,7 +80,57 @@
 
         "Properties"
         {
-          "MODIFIER_PROPERTY_MANA_REGEN_CONSTANT"      "1.2"
+          "MODIFIER_PROPERTY_MANA_REGEN_CONSTANT"      "1.75"
+        }
+      }
+    }
+  }
+
+  "cott_heal_negate"
+  {
+    "AbilityBehavior"             "DOTA_ABILITY_BEHAVIOR_UNIT_TARGET"
+    "BaseClass"                   "ability_datadriven"
+    "AbilityTextureName"          "rubick_empty1"
+    "MaxLevel"                    "1"
+    "AbilityUnitTargetTeam"     "DOTA_UNIT_TARGET_TEAM_BOTH"
+    "AbilityUnitTargetType"     "DOTA_UNIT_TARGET_HERO | DOTA_UNIT_TARGET_BASIC"
+    "AbilityCastPoint"  "0.0"
+    "AbilityCastRange"  "999999"
+    
+    "OnSpellStart"
+    {
+      "ApplyModifier"
+      {
+        "Target" "TARGET"
+        "ModifierName" "modifier_cott_heal_negate"
+      }
+    }
+
+    "Modifiers"
+    {
+      "modifier_cott_heal_negate"
+      {
+        "IsHidden"                "1"
+        "IsPurgeable"             "0"
+
+        "OnTakeDamage"
+        {
+          "RunScript"
+          {
+            "ScriptFile"          "custom_abilities.lua"
+            "Function"            "HealthTrack"
+            "Target"              "UNIT"
+          }
+        }
+
+        "OnHealthGained"
+        {
+          "RunScript"
+          {
+            "ScriptFile"          "custom_abilities.lua"
+            "Function"            "HealNegate"
+            "Target"              "UNIT"
+          }
         }
       }
     }
