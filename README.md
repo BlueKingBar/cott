@@ -18,9 +18,11 @@ Details:
 
 - Depositing souls not only gives your team 1 point per soul, but heals you for 4% per soul. Soul depositing is instantaneous and immediately brings you to zero souls if you have a positive number of souls.
 
+- Except for the above two sources, healing is negated by having too many souls. This scales linearly up to 100% healing reduction at 40 souls.
+
 - Each creep pushed into the enemy's portal grants your whole team 1 soul.
 
-- All heroes gain 1.2 non-multiplied mana regen and start with 3.0 base HP regen.
+- All heroes gain 1.75 non-multiplied mana regen and start with 5.0 base HP regen.
 
 Pudge Changes:
 
@@ -37,6 +39,8 @@ Disabled Heroes:
 - Meepo: Really, really buggy in general.
 
 - Silencer: Int steal cannot be disabled.
+
+- Slark: Passive heal is not disabled by heal negation code. I will re-add him when I find a way to make it work.
 
 - Techies: Not in Source 2, impossible to add at the moment.
 
