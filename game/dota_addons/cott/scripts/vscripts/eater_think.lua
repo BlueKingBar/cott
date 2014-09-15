@@ -6,7 +6,7 @@ function EaterThinkRadiant(trigger)
 	end
 
 	if creep and creep:IsAlive() then
-		if creep:GetTeam() == DOTA_TEAM_BADGUYS then		
+		if creep:GetTeam() == DOTA_TEAM_BADGUYS and creep:GetPlayerOwnerID() < 0 then		
 			local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_obsidian_destroyer/obsidian_death_cloud.vpcf", PATTACH_RENDERORIGIN_FOLLOW, creep)
 			ParticleManager:SetParticleControl(particle, 0, creep:GetCenter())
 			ParticleManager:ReleaseParticleIndex(particle)
@@ -36,7 +36,7 @@ function EaterThinkDire(trigger)
 	end
 
 	if creep and creep:IsAlive() then
-		if creep:GetTeam() == DOTA_TEAM_GOODGUYS then		
+		if creep:GetTeam() == DOTA_TEAM_GOODGUYS and creep:GetPlayerOwnerID() < 0 then		
 			local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_obsidian_destroyer/obsidian_death_cloud.vpcf", PATTACH_RENDERORIGIN_FOLLOW, creep)
 			ParticleManager:SetParticleControl(particle, 0, creep:GetCenter())
 			ParticleManager:ReleaseParticleIndex(particle)
