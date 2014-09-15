@@ -65,8 +65,6 @@ function ClashGameMode:InitGameMode()
 	GameRules:SetGoldPerTick(1)
 	print('[COTT] Rules set')
 
-	InitLogFile( "log/cott.txt","")
-
 	-- Hooks
 	ListenToGameEvent('entity_killed', Dynamic_Wrap(ClashGameMode, 'OnEntityKilled'), self)
 	ListenToGameEvent('entity_hurt', Dynamic_Wrap(ClashGameMode, 'OnEntityHurt'), self)

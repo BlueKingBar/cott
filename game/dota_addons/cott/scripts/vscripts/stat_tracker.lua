@@ -63,6 +63,7 @@ function ClashStatTracker:AddSoulsDeposited( playerID, souls)
 end
 
 function ClashStatTracker:PrintStats()
+	InitLogFile( "log/cott.txt","")
 	for k, v in pairs(self.playerData) do
 		print("[COTT] Stats for Player "..k)
 		print(v.name)
@@ -76,5 +77,22 @@ function ClashStatTracker:PrintStats()
 		print("Souls deposited: "..v.soulsDeposited)
 		print("Average souls deposited at once: "..(v.soulsDeposited/math.max(v.avgSoulsDivide, 1)))
 		print("")
+
+		AppendToLogFile("log/cott.txt", "[COTT] Stats for Player "..k.."\n")
+		AppendToLogFile("log/cott.txt", v.name.."\n")
+		AppendToLogFile("log/cott.txt", v.hero.."\n")
+		AppendToLogFile("log/cott.txt", "Souls gained passively: "..v.passiveSouls.."\n")
+		AppendToLogFile("log/cott.txt", "Souls gained from pushing: "..v.pushSouls.."\n")
+		AppendToLogFile("log/cott.txt", "Souls gained from totems: "..v.totemSouls.."\n")
+		AppendToLogFile("log/cott.txt", "Souls gained from kills: "..v.killSouls.."\n")
+		AppendToLogFile("log/cott.txt", "Total souls gained: "..(v.pushSouls + v.passiveSouls + v.totemSouls + v.killSouls).."\n")
+		AppendToLogFile("log/cott.txt", "Souls lost to death: "..v.soulsLost.."\n")
+		AppendToLogFile("log/cott.txt", "Souls deposited: "..v.soulsDeposited.."\n")
+		AppendToLogFile("log/cott.txt", "Average souls deposited at once: "..(v.soulsDeposited/math.max(v.avgSoulsDivide, 1)).."\n")
+		AppendToLogFile("log/cott.txt", "\n")
 	end
+	print("End of COTT stats.")
+	print("------------------------------------------------------------------------------------")
+	AppendToLogFile("log/cott.txt", "End of COTT stats.\n")
+	AppendToLogFile("log/cott.txt", "------------------------------------------------------------------------------------\n")
 end
