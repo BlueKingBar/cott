@@ -53,6 +53,7 @@ function PotThink(trigger)
 				ClashGameMode.statuesRadiant[k]:SetRenderColor(255, 128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1))
 				if oldModel ~= ClashGameMode.statuesRadiant[k]:GetModelName() then
 					ClashGameMode.statuesRadiant[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
+					ClashGameMode.statuesRadiant[k]:EmitSoundParams("lina_lina_level_03", 100 - (statueNo - 1) * 2, 1.0, 0.0)
 
 					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyRadiant[k])
 					ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyRadiant[k]:GetAbsOrigin())
@@ -78,6 +79,7 @@ function PotThink(trigger)
 				ClashGameMode.statuesDire[k]:SetRenderColor(128 - 6 * (statueNo - 1), 128 - 6 * (statueNo - 1), 255)
 				if oldModel ~= ClashGameMode.statuesDire[k]:GetModelName() then
 					ClashGameMode.statuesDire[k]:EmitSoundParams("Tiny.Grow", 100 - (statueNo - 1) * 2, 1.0, 0.0)
+					ClashGameMode.statuesDire[k]:EmitSoundParams("queenofpain_pain_levelup_05", 100 - (statueNo - 1) * 2, 1.0, 0.0)
 
 					local particle = ParticleManager:CreateParticle("particles/units/heroes/hero_tiny/tiny_transform.vpcf", PATTACH_ROOTBONE_FOLLOW, ClashGameMode.invisibleTinyDire[k])
 					ParticleManager:SetParticleControl(particle, 0, ClashGameMode.invisibleTinyDire[k]:GetAbsOrigin())

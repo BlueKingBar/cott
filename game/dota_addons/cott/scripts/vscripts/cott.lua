@@ -63,6 +63,7 @@ function ClashGameMode:InitGameMode()
 	GameRules:SetTreeRegrowTime( 180.0 )
 	GameRules:SetUseCustomHeroXPValues ( false )
 	GameRules:SetGoldPerTick(1)
+	GameRules:SetCustomGameEndDelay(12.0)
 	print('[COTT] Rules set')
 
 	-- Hooks
