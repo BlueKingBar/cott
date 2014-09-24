@@ -6,16 +6,17 @@ THINK_TIME = 0.1
 
 STARTING_GOLD = 650 --Non-functional
 MAX_LEVEL = 100 --Doesn't function, custom levels are turned off.
-POINTS_TO_WIN = 400
+POINTS_TO_WIN = 800
 RESPAWN_TIME = 6.0
 STATS_PER_SOUL = 0.75 --Not functional. Changed the way stat gains work.
-MAX_STATS_PER_LEVEL = 5 --Make sure this number is higher than the highest stat gain in the game or a hero may lose stats with souls.
+MAX_STATS_PER_LEVEL = 7.0 --Make sure this number is higher than the highest stat gain in the game or a hero may lose stats with souls.
 DMG_PER_SOUL = 1 --Not currently functional. Damage was disabled.
 SCALE_PER_SOUL = 0.03 --Scale is a fraction of the hero's default size.
 SOUL_MIN = 0
 SOUL_MAX = 100
 SOUL_SCALE_MAX = 100 --Hero stops getting bigger after this many souls.
-SOUL_TIME = 15.0 --Every player gains a soul at this interval after the game timer hits 0:00
+SOUL_TIME = 10.0 --Every player gains a soul at this interval after the game timer hits 0:00
+CREEPS_PER_SOUL = 2 --Creeps that need to be pushed for every player on a team to gain souls.
 PICKUP_TIME = 30.0 --Heal pickups spawn at this interval after the game timer hits 0:00
 
 -- Fill this table up with the required XP per level if you want to change it
