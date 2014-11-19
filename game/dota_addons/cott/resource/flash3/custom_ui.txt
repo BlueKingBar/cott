@@ -10,6 +10,11 @@
 		"File"		"COTTSoulCounter"
 		"Depth"		"51"
 	}
+	"2"
+    {
+        "File" "StatsCollection"
+        "Depth" "1"
+    }
 }
 
 // =============================================

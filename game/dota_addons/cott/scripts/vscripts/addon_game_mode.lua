@@ -1,4 +1,8 @@
--- Generated from template
+-- Load Stat collection (statcollection should be available from any script scope)
+require('lib.statcollection')
+statcollection.addStats({
+    modID = 'b4884f6843179a0cf9c23fa952f09d67' --GET THIS FROM http://getdotastats.com/#d2mods__my_mods
+})
 
 require('util')
 --require('physics')

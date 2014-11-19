@@ -1,5 +1,14 @@
 "CustomEvents"
 {
+	// Stat collection
+    "stat_collection_part"
+    {
+        "data"          "string"
+    }
+    "stat_collection_send"
+    {
+    }
+    // Gameplay
 	"cott_souls_change"
 	{
 		"nPlayerID"              "short"
